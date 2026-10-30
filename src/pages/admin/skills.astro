@@ -1,0 +1,198 @@
+---
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import db from '@utils/db';
+
+export const prerender = false;
+
+const skills = db.prepare('SELECT * FROM skills ORDER BY id ASC').all() as any[];
+---
+
+<AdminLayout title="Manage Skills" activeMenu="skills">
+  <div class="row">
+    <div class="col-12 mb-4">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Daftar Keahlian / Tech Stack & Level</h5>
+          <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#skillModal" id="addSkillBtn">
+            <i class="bx bx-plus me-1"></i> Tambah Keahlian
+          </button>
+        </div>
+        <div class="table-responsive text-nowrap">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>Nama Skill</th>
+                <th>Kategori</th>
+                <th>Tingkat Penguasaan</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody class="table-border-bottom-0">
+              {skills.map((s) => (
+                <tr id={`row-${s.id}`}>
+                  <td><strong>{s.name}</strong></td>
+                  <td><span class="badge bg-label-info">{s.category}</span></td>
+                  <td>
+                    <div class="d-flex align-items-center">
+                      <div class="progress w-100 me-3" style="height: 8px;">
+                        <div class="progress-bar bg-primary" role="progressbar" style={`width: ${s.level}%`} aria-valuenow={s.level} aria-valuemin="0" aria-valuemax="100"></div>
+                      </div>
+                      <span class="text-muted">{s.level}%</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="dropdown">
+                      <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
+                        <i class="bx bx-dots-vertical-rounded"></i>
+                      </button>
+                      <div class="dropdown-menu">
+                        <a
+                          class="dropdown-item edit-btn"
+                          href="javascript:void(0);"
+                          data-id={s.id}
+                          data-name={s.name}
+                          data-level={s.level}
+                          data-category={s.category}
+                        >
+                          <i class="bx bx-edit-alt me-1"></i> Edit
+                        </a>
+                        <a class="dropdown-item text-danger delete-btn" href="javascript:void(0);" data-id={s.id}>
+                          <i class="bx bx-trash me-1"></i> Hapus
+                        </a>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {skills.length === 0 && (
+                <tr>
+                  <td colspan="4" class="text-center py-4 text-muted">Belum ada skill yang ditambahkan.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Skill Form -->
+  <div class="modal fade" id="skillModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalTitle">Tambah Keahlian</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="skillForm">
+          <div class="modal-body">
+            <input type="hidden" id="skillId" />
+            <div class="mb-3">
+              <label for="name" class="form-label">Nama Skill / Framework</label>
+              <input type="text" id="name" class="form-control" placeholder="Contoh: React 19 / Astro" required />
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="category" class="form-label">Kategori</label>
+                <input type="text" id="category" class="form-control" placeholder="Frontend, Backend, etc." required />
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="level" class="form-label">Level (%)</label>
+                <input type="number" id="level" class="form-control" min="1" max="100" value="85" required />
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+            <button type="submit" class="btn btn-primary" id="saveSkillBtn">Simpan</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script is:inline>
+    let isEditing = false;
+    const modalTitle = document.getElementById('modalTitle');
+    const skillForm = document.getElementById('skillForm');
+    const addBtn = document.getElementById('addSkillBtn');
+
+    addBtn.addEventListener('click', () => {
+      isEditing = false;
+      modalTitle.innerText = 'Tambah Keahlian';
+      document.getElementById('skillId').value = '';
+      skillForm.reset();
+      document.getElementById('level').value = '85';
+    });
+
+    document.querySelectorAll('.edit-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        isEditing = true;
+        modalTitle.innerText = 'Edit Keahlian';
+        const d = btn.dataset;
+        document.getElementById('skillId').value = d.id;
+        document.getElementById('name').value = d.name;
+        document.getElementById('category').value = d.category;
+        document.getElementById('level').value = d.level;
+        
+        const modal = new bootstrap.Modal(document.getElementById('skillModal'));
+        modal.show();
+      });
+    });
+
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        if (!confirm('Hapus skill ini?')) return;
+
+        try {
+          const res = await fetch('/api/admin/skills', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'delete', id }),
+          });
+          if (res.ok) {
+            document.getElementById(`row-${id}`)?.remove();
+          } else {
+            alert('Gagal menghapus');
+          }
+        } catch (err) {
+          alert('Error: ' + err.message);
+        }
+      });
+    });
+
+    skillForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('skillId').value;
+      const name = document.getElementById('name').value;
+      const category = document.getElementById('category').value;
+      const level = document.getElementById('level').value;
+
+      const payload = {
+        action: isEditing ? 'update' : 'create',
+        id,
+        name,
+        category,
+        level,
+        icon: 'ph-code',
+      };
+
+      try {
+        const res = await fetch('/api/admin/skills', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (res.ok) {
+          location.reload();
+        } else {
+          const r = await res.json();
+          alert('Error: ' + (r.error || 'Gagal menyimpan'));
+        }
+      } catch (err) {
+        alert('Connection error: ' + err.message);
+      }
+    });
+  </script>
+</AdminLayout>

@@ -1,0 +1,223 @@
+---
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import db from '@utils/db';
+
+export const prerender = false;
+
+const testimonials = db.prepare('SELECT * FROM testimonials ORDER BY sort_order ASC, id ASC').all() as any[];
+---
+
+<AdminLayout title="Manage Testimonials" activeMenu="testimonials">
+  <div class="row">
+    <div class="col-12 mb-4">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Daftar Testimoni & Review Klien</h5>
+          <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#testModal" id="addTestBtn">
+            <i class="bx bx-plus me-1"></i> Tambah Testimoni Baru
+          </button>
+        </div>
+        <div class="table-responsive text-nowrap">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>Foto</th>
+                <th>Klien / Author</th>
+                <th>Role / Perusahaan</th>
+                <th>Kutipan / Review</th>
+                <th>Urutan</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody class="table-border-bottom-0">
+              {testimonials.map((t) => (
+                <tr id={`row-${t.id}`}>
+                  <td>
+                    <img src={t.avatar} alt={t.author} class="rounded-circle" style="width: 38px; height: 38px; object-fit: cover;" />
+                  </td>
+                  <td><strong>{t.author}</strong></td>
+                  <td><span class="badge bg-label-info">{t.role}</span></td>
+                  <td class="text-truncate" style="max-width: 280px;">"{t.quote}"</td>
+                  <td>#{t.sort_order}</td>
+                  <td>
+                    <div class="dropdown">
+                      <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
+                        <i class="bx bx-dots-vertical-rounded"></i>
+                      </button>
+                      <div class="dropdown-menu">
+                        <a
+                          class="dropdown-item edit-btn"
+                          href="javascript:void(0);"
+                          data-id={t.id}
+                          data-author={t.author}
+                          data-role={t.role}
+                          data-quote={t.quote}
+                          data-avatar={t.avatar}
+                          data-initials={t.initials}
+                          data-order={t.sort_order}
+                        >
+                          <i class="bx bx-edit-alt me-1"></i> Edit
+                        </a>
+                        <a class="dropdown-item text-danger delete-btn" href="javascript:void(0);" data-id={t.id}>
+                          <i class="bx bx-trash me-1"></i> Hapus
+                        </a>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {testimonials.length === 0 && (
+                <tr>
+                  <td colspan="6" class="text-center py-4 text-muted">Belum ada testimoni.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Testimonial Form -->
+  <div class="modal fade" id="testModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalTitle">Tambah Testimoni</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="testForm">
+          <div class="modal-body">
+            <input type="hidden" id="testId" />
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="author" class="form-label">Nama Klien / Author</label>
+                <input type="text" id="author" class="form-control" placeholder="Budi Santoso" required />
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="role" class="form-label">Jabatan / Perusahaan</label>
+                <input type="text" id="role" class="form-control" placeholder="CEO, PT Maju Bersama" required />
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="avatar" class="form-label">URL Foto Avatar</label>
+                <input type="text" id="avatar" class="form-control" placeholder="https://..." value="https://i.pravatar.cc/150?u=client" required />
+              </div>
+              <div class="col-md-3 mb-3">
+                <label for="initials" class="form-label">Inisial</label>
+                <input type="text" id="initials" class="form-control" placeholder="BS" required />
+              </div>
+              <div class="col-md-3 mb-3">
+                <label for="sort_order" class="form-label">Urutan</label>
+                <input type="number" id="sort_order" class="form-control" value="1" required />
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="quote" class="form-label">Kutipan Review</label>
+              <textarea id="quote" class="form-control" rows="3" placeholder="Tuliskan pengalaman klien bekerjasama..." required></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+            <button type="submit" class="btn btn-primary" id="saveTestBtn">Simpan</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script is:inline>
+    let isEditing = false;
+    const modalTitle = document.getElementById('modalTitle');
+    const testForm = document.getElementById('testForm');
+    const addBtn = document.getElementById('addTestBtn');
+
+    addBtn.addEventListener('click', () => {
+      isEditing = false;
+      modalTitle.innerText = 'Tambah Testimoni';
+      document.getElementById('testId').value = '';
+      testForm.reset();
+      document.getElementById('avatar').value = 'https://i.pravatar.cc/150?u=client';
+      document.getElementById('sort_order').value = '1';
+    });
+
+    document.querySelectorAll('.edit-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        isEditing = true;
+        modalTitle.innerText = 'Edit Testimoni';
+        const d = btn.dataset;
+        document.getElementById('testId').value = d.id;
+        document.getElementById('author').value = d.author;
+        document.getElementById('role').value = d.role;
+        document.getElementById('quote').value = d.quote;
+        document.getElementById('avatar').value = d.avatar;
+        document.getElementById('initials').value = d.initials;
+        document.getElementById('sort_order').value = d.order;
+        
+        const modal = new bootstrap.Modal(document.getElementById('testModal'));
+        modal.show();
+      });
+    });
+
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        if (!confirm('Hapus testimoni ini?')) return;
+
+        try {
+          const res = await fetch('/api/admin/testimonials', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'delete', id }),
+          });
+          if (res.ok) {
+            document.getElementById(`row-${id}`)?.remove();
+          } else {
+            alert('Gagal menghapus');
+          }
+        } catch (err) {
+          alert('Error: ' + err.message);
+        }
+      });
+    });
+
+    testForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('testId').value;
+      const author = document.getElementById('author').value;
+      const role = document.getElementById('role').value;
+      const quote = document.getElementById('quote').value;
+      const avatar = document.getElementById('avatar').value;
+      const initials = document.getElementById('initials').value;
+      const sort_order = document.getElementById('sort_order').value;
+
+      const payload = {
+        action: isEditing ? 'update' : 'create',
+        id,
+        author,
+        role,
+        quote,
+        avatar,
+        initials,
+        sort_order,
+      };
+
+      try {
+        const res = await fetch('/api/admin/testimonials', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (res.ok) {
+          location.reload();
+        } else {
+          const r = await res.json();
+          alert('Error: ' + (r.error || 'Gagal menyimpan'));
+        }
+      } catch (err) {
+        alert('Connection error: ' + err.message);
+      }
+    });
+  </script>
+</AdminLayout>

@@ -1,0 +1,214 @@
+---
+import { getAuthenticatedAdmin } from "@/utils/auth";
+
+// Jika sudah login, redirect langsung ke dashboard
+const admin = getAuthenticatedAdmin(Astro.request);
+if (admin) {
+  return Astro.redirect("/admin");
+}
+---
+
+<!DOCTYPE html>
+<html
+  lang="id"
+  class="light-style customizer-hide"
+  dir="ltr"
+  data-theme="theme-default"
+  data-assets-path="/admin-assets/"
+  data-template="vertical-menu-template-free"
+>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"
+    />
+    <title>Login Administrator CMS — AplikasiMedia</title>
+    <meta name="robots" content="noindex, nofollow" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/admin-assets/img/favicon/favicon.ico" />
+
+    <!-- Fonts & Icons -->
+    <link rel="stylesheet" href="/admin-assets/vendor/fonts/boxicons.css" />
+
+    <!-- Core CSS -->
+    <link rel="stylesheet" href="/admin-assets/vendor/css/core.css" class="template-customizer-core-css" />
+    <link rel="stylesheet" href="/admin-assets/vendor/css/theme-default.css" class="template-customizer-theme-css" />
+    <link rel="stylesheet" href="/admin-assets/css/demo.css" />
+
+    <style>
+      body {
+        background: #181924;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Public Sans', sans-serif;
+      }
+      .authentication-wrapper {
+        width: 100%;
+        max-width: 440px;
+        padding: 1.5rem;
+      }
+      .card-login {
+        background: #2b2c40;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        color: #cfd3ec;
+      }
+      .form-control {
+        background-color: #232333;
+        border-color: rgba(255, 255, 255, 0.12);
+        color: #f4f4f5;
+      }
+      .form-control:focus {
+        background-color: #232333;
+        border-color: #696cff;
+        color: #ffffff;
+        box-shadow: 0 0 0 0.25rem rgba(105, 108, 255, 0.2);
+      }
+      .app-brand-logo-custom {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        background: linear-gradient(135deg, #696cff 0%, #4338ca 100%);
+        border-radius: 10px;
+        color: #fff;
+        font-size: 24px;
+      }
+      .iso-badge {
+        font-size: 11px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 6px;
+        padding: 4px 8px;
+        color: #a1a1aa;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="authentication-wrapper">
+      <div class="card card-login p-4">
+        <div class="card-body">
+          <!-- Logo & Brand -->
+          <div class="app-brand justify-content-center mb-4">
+            <div class="d-flex align-items-center gap-2">
+              <span class="app-brand-logo-custom">
+                <i class="bx bx-shield-quarter"></i>
+              </span>
+              <div>
+                <div class="fw-bolder fs-4 text-white leading-tight">AplikasiMedia</div>
+                <div class="text-muted small">CMS Control Center</div>
+              </div>
+            </div>
+          </div>
+
+          <h5 class="mb-2 text-white fw-semibold text-center">Autentikasi Pengelola</h5>
+          <p class="text-muted text-center small mb-4">Masukkan username dan password admin Anda untuk mengelola konten.</p>
+
+          <div id="alertBox" class="alert alert-danger d-none py-2 px-3 small mb-3"></div>
+
+          <form id="loginForm">
+            <div class="mb-3">
+              <label for="username" class="form-label text-muted small fw-semibold">Username</label>
+              <div class="input-group">
+                <span class="input-group-text bg-transparent border-end-0 border-secondary text-muted">
+                  <i class="bx bx-user"></i>
+                </span>
+                <input
+                  type="text"
+                  class="form-control border-start-0"
+                  id="username"
+                  name="username"
+                  placeholder="Masukkan username"
+                  autofocus
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="mb-4 form-password-toggle">
+              <label class="form-label text-muted small fw-semibold" for="password">Password</label>
+              <div class="input-group">
+                <span class="input-group-text bg-transparent border-end-0 border-secondary text-muted">
+                  <i class="bx bx-lock-alt"></i>
+                </span>
+                <input
+                  type="password"
+                  id="password"
+                  class="form-control border-start-0"
+                  name="password"
+                  placeholder="••••••••••••"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <button class="btn btn-primary d-grid w-100 fw-semibold py-2" type="submit" id="submitBtn">
+                <span class="d-flex align-items-center justify-content-center gap-2">
+                  <i class="bx bx-log-in"></i> Masuk ke Dashboard
+                </span>
+              </button>
+            </div>
+          </form>
+
+          <div class="mt-4 pt-3 border-top border-secondary border-opacity-25 text-center">
+            <div class="iso-badge d-inline-flex align-items-center gap-1">
+              <i class="bx bx-check-shield text-success"></i>
+              <span>ISO/IEC/IEEE 23026:2023 Standard Security</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script is:inline>
+      const form = document.getElementById('loginForm');
+      const alertBox = document.getElementById('alertBox');
+      const submitBtn = document.getElementById('submitBtn');
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        alertBox.classList.add('d-none');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Memverifikasi...';
+
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+
+        try {
+          const res = await fetch('/api/admin/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password }),
+          });
+
+          const data = await res.json();
+
+          if (res.ok && data.success) {
+            submitBtn.classList.remove('btn-primary');
+            submitBtn.classList.add('btn-success');
+            submitBtn.innerHTML = '<i class="bx bx-check me-2"></i>Berhasil! Mengalihkan...';
+            window.location.href = data.redirect || '/admin';
+          } else {
+            alertBox.textContent = data.error || 'Login gagal. Periksa kembali username dan password.';
+            alertBox.classList.remove('d-none');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="bx bx-log-in me-2"></i>Masuk ke Dashboard';
+          }
+        } catch (err) {
+          alertBox.textContent = 'Terjadi kesalahan jaringan atau server.';
+          alertBox.classList.remove('d-none');
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<i class="bx bx-log-in me-2"></i>Masuk ke Dashboard';
+        }
+      });
+    </script>
+  </body>
+</html>

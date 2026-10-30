@@ -1,0 +1,216 @@
+---
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import db from '@utils/db';
+
+export const prerender = false;
+
+const projects = db.prepare('SELECT * FROM projects ORDER BY sort_order ASC, id DESC').all() as any[];
+---
+
+<AdminLayout title="Manage Projects" activeMenu="projects">
+  <div class="row">
+    <div class="col-12 mb-4">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Daftar Project Portofolio</h5>
+          <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#projectModal" id="addProjectBtn">
+            <i class="bx bx-plus me-1"></i> Tambah Project Baru
+          </button>
+        </div>
+        <div class="table-responsive text-nowrap">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>Preview</th>
+                <th>Judul Project</th>
+                <th>Kategori</th>
+                <th>Link</th>
+                <th>Urutan</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody class="table-border-bottom-0">
+              {projects.map((p) => (
+                <tr id={`row-${p.id}`}>
+                  <td>
+                    <img src={p.image} alt={p.title} class="rounded" style="width: 55px; height: 38px; object-fit: cover;" />
+                  </td>
+                  <td><strong>{p.title}</strong></td>
+                  <td><span class="badge bg-label-info">{p.category}</span></td>
+                  <td><a href={p.link} target="_blank" class="text-primary small">{p.link}</a></td>
+                  <td><span class="badge bg-label-secondary">#{p.sort_order}</span></td>
+                  <td>
+                    <div class="dropdown">
+                      <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
+                        <i class="bx bx-dots-vertical-rounded"></i>
+                      </button>
+                      <div class="dropdown-menu">
+                        <a
+                          class="dropdown-item edit-btn"
+                          href="javascript:void(0);"
+                          data-id={p.id}
+                          data-title={p.title}
+                          data-category={p.category}
+                          data-image={p.image}
+                          data-alt={p.alt}
+                          data-link={p.link}
+                          data-order={p.sort_order}
+                        >
+                          <i class="bx bx-edit-alt me-1"></i> Edit
+                        </a>
+                        <a class="dropdown-item text-danger delete-btn" href="javascript:void(0);" data-id={p.id}>
+                          <i class="bx bx-trash me-1"></i> Hapus
+                        </a>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {projects.length === 0 && (
+                <tr>
+                  <td colspan="6" class="text-center py-4 text-muted">Belum ada project portfolio. Klik tombol "Tambah Project Baru" di atas.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Project Form -->
+  <div class="modal fade" id="projectModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalTitle">Tambah Project Baru</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="projectForm">
+          <div class="modal-body">
+            <input type="hidden" id="projectId" />
+            <div class="mb-3">
+              <label for="title" class="form-label">Judul Project</label>
+              <input type="text" id="title" class="form-control" placeholder="Contoh: E-Commerce Mobile App" required />
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="category" class="form-label">Kategori</label>
+                <input type="text" id="category" class="form-control" placeholder="Contoh: Web Development" required />
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="sort_order" class="form-label">Urutan Tampil</label>
+                <input type="number" id="sort_order" class="form-control" value="1" required />
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="image" class="form-label">URL Gambar Banner</label>
+              <input type="text" id="image" class="form-control" value="/assets/images/t001-nova/t001-nova-project-laptop.webp" required />
+              <small class="text-muted">Bisa path lokal atau URL web eksternal</small>
+            </div>
+            <div class="mb-3">
+              <label for="link" class="form-label">Tautan / Demo URL</label>
+              <input type="text" id="link" class="form-control" placeholder="https:// atau #" value="#" />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+            <button type="submit" class="btn btn-primary" id="saveProjBtn">Simpan Project</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script is:inline>
+    let isEditing = false;
+    const modalTitle = document.getElementById('modalTitle');
+    const projectForm = document.getElementById('projectForm');
+    const addBtn = document.getElementById('addProjectBtn');
+
+    addBtn.addEventListener('click', () => {
+      isEditing = false;
+      modalTitle.innerText = 'Tambah Project Baru';
+      document.getElementById('projectId').value = '';
+      projectForm.reset();
+      document.getElementById('sort_order').value = '1';
+      document.getElementById('image').value = '/assets/images/t001-nova/t001-nova-project-laptop.webp';
+    });
+
+    document.querySelectorAll('.edit-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        isEditing = true;
+        modalTitle.innerText = 'Edit Project';
+        const d = btn.dataset;
+        document.getElementById('projectId').value = d.id;
+        document.getElementById('title').value = d.title;
+        document.getElementById('category').value = d.category;
+        document.getElementById('image').value = d.image;
+        document.getElementById('link').value = d.link;
+        document.getElementById('sort_order').value = d.order;
+        
+        const modal = new bootstrap.Modal(document.getElementById('projectModal'));
+        modal.show();
+      });
+    });
+
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        if (!confirm('Yakin ingin menghapus project ini?')) return;
+
+        try {
+          const res = await fetch('/api/admin/projects', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'delete', id }),
+          });
+          if (res.ok) {
+            document.getElementById(`row-${id}`)?.remove();
+          } else {
+            alert('Gagal menghapus');
+          }
+        } catch (err) {
+          alert('Error: ' + err.message);
+        }
+      });
+    });
+
+    projectForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('projectId').value;
+      const title = document.getElementById('title').value;
+      const category = document.getElementById('category').value;
+      const image = document.getElementById('image').value;
+      const link = document.getElementById('link').value;
+      const sort_order = document.getElementById('sort_order').value;
+
+      const payload = {
+        action: isEditing ? 'update' : 'create',
+        id,
+        title,
+        category,
+        image,
+        alt: title,
+        link,
+        sort_order,
+      };
+
+      try {
+        const res = await fetch('/api/admin/projects', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (res.ok) {
+          location.reload();
+        } else {
+          const r = await res.json();
+          alert('Error: ' + (r.error || 'Gagal menyimpan'));
+        }
+      } catch (err) {
+        alert('Connection error: ' + err.message);
+      }
+    });
+  </script>
+</AdminLayout>

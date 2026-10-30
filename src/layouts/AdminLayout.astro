@@ -1,0 +1,729 @@
+---
+interface Props {
+  title?: string;
+  activeMenu?: string;
+}
+
+const { title = "Dashboard", activeMenu = "dashboard" } = Astro.props;
+---
+
+<!DOCTYPE html>
+<html
+  lang="en"
+  class="light-style layout-menu-fixed"
+  dir="ltr"
+  data-theme="theme-default"
+  data-assets-path="/admin-assets/"
+  data-template="vertical-menu-template-free"
+>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"
+    />
+    <title>{title} | Sneat Portfolio CMS</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/admin-assets/img/favicon/favicon.ico" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="/admin-assets/vendor/fonts/boxicons.css" />
+
+    <!-- Core CSS -->
+    <link rel="stylesheet" href="/admin-assets/vendor/css/core.css" class="template-customizer-core-css" />
+    <link rel="stylesheet" href="/admin-assets/vendor/css/theme-default.css" class="template-customizer-theme-css" />
+    <link rel="stylesheet" href="/admin-assets/css/demo.css" />
+
+    <!-- Vendors CSS -->
+    <link rel="stylesheet" href="/admin-assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css" />
+    <link rel="stylesheet" href="/admin-assets/vendor/libs/apex-charts/apex-charts.css" />
+
+    <!-- Helpers -->
+    <script is:inline src="/admin-assets/vendor/js/helpers.js"></script>
+    <script is:inline src="/admin-assets/js/config.js"></script>
+
+    <style is:global>
+      .app-brand-text {
+        font-weight: 700;
+        font-size: 1.25rem;
+        letter-spacing: -0.5px;
+      }
+      .badge-soft-success {
+        background-color: rgba(113, 221, 55, 0.16);
+        color: #71dd37;
+      }
+      .table td, .table th {
+        vertical-align: middle;
+      }
+
+      /* New incoming message highlight */
+      .new-row-pulse {
+        background-color: rgba(105, 108, 255, 0.18) !important;
+        animation: newRowFade 3s ease-out forwards;
+      }
+      .new-row-pulse td {
+        background-color: transparent !important;
+        color: inherit !important;
+      }
+      @keyframes newRowFade {
+        0% { background-color: rgba(105, 108, 255, 0.35); }
+        70% { background-color: rgba(105, 108, 255, 0.2); }
+        100% { background-color: transparent; }
+      }
+
+      /* Sneat Dark Mode Styles */
+      html.dark-style,
+      html[data-bs-theme="dark"] {
+        color-scheme: dark;
+      }
+
+      html.dark-style body,
+      html[data-bs-theme="dark"] body {
+        background-color: #232333 !important;
+        color: #a3a4cc !important;
+      }
+
+      html.dark-style .bg-lighter,
+      html[data-bs-theme="dark"] .bg-lighter {
+        background-color: #232333 !important;
+        color: #cfd3ec !important;
+      }
+
+      html.dark-style .bg-menu-theme,
+      html[data-bs-theme="dark"] .bg-menu-theme {
+        background-color: #2b2c40 !important;
+        box-shadow: 0 0.125rem 0.375rem 0 rgba(0, 0, 0, 0.35) !important;
+      }
+
+      /* Fix garis putih menu-inner-shadow di dark mode */
+      html.dark-style .menu-inner-shadow,
+      html[data-bs-theme="dark"] .menu-inner-shadow,
+      html.dark-style .bg-menu-theme .menu-inner-shadow,
+      html[data-bs-theme="dark"] .bg-menu-theme .menu-inner-shadow {
+        background: linear-gradient(#2b2c40 41%, rgba(43, 44, 64, 0.11) 95%, rgba(43, 44, 64, 0)) !important;
+      }
+
+      html.dark-style .bg-navbar-theme,
+      html[data-bs-theme="dark"] .bg-navbar-theme {
+        background-color: #2b2c40 !important;
+        box-shadow: 0 0.125rem 0.375rem 0 rgba(0, 0, 0, 0.35) !important;
+      }
+
+      html.dark-style .card,
+      html[data-bs-theme="dark"] .card {
+        background-color: #2b2c40 !important;
+        color: #cfd3ec !important;
+        border-color: #3b3c54 !important;
+        box-shadow: 0 0.125rem 0.375rem 0 rgba(0, 0, 0, 0.35) !important;
+      }
+
+      html.dark-style .card .card-title,
+      html[data-bs-theme="dark"] .card .card-title,
+      html.dark-style .card h1, html.dark-style .card h2, html.dark-style .card h3,
+      html.dark-style .card h4, html.dark-style .card h5, html.dark-style .card h6,
+      html[data-bs-theme="dark"] .card h1, html[data-bs-theme="dark"] .card h2,
+      html[data-bs-theme="dark"] .card h3, html[data-bs-theme="dark"] .card h4,
+      html[data-bs-theme="dark"] .card h5, html[data-bs-theme="dark"] .card h6 {
+        color: #e4e6f4 !important;
+      }
+
+      html.dark-style .card .card-body,
+      html.dark-style .card .card-header,
+      html.dark-style .card .card-footer,
+      html[data-bs-theme="dark"] .card .card-body,
+      html[data-bs-theme="dark"] .card .card-header,
+      html[data-bs-theme="dark"] .card .card-footer {
+        background-color: #2b2c40 !important;
+        color: #cfd3ec !important;
+      }
+
+      html.dark-style .card .border-top,
+      html.dark-style .card .border-bottom,
+      html.dark-style .card .border,
+      html[data-bs-theme="dark"] .card .border-top,
+      html[data-bs-theme="dark"] .card .border-bottom,
+      html[data-bs-theme="dark"] .card .border {
+        border-color: #3b3c54 !important;
+      }
+
+      html.dark-style .card-body .btn-outline-primary,
+      html[data-bs-theme="dark"] .card-body .btn-outline-primary {
+        color: #696cff !important;
+        border-color: #696cff !important;
+      }
+
+      html.dark-style .card-body .btn-outline-primary:hover,
+      html[data-bs-theme="dark"] .card-body .btn-outline-primary:hover {
+        background-color: #696cff !important;
+        color: #ffffff !important;
+      }
+
+      html.dark-style .bg-label-primary,
+      html[data-bs-theme="dark"] .bg-label-primary {
+        background-color: rgba(105, 108, 255, 0.2) !important;
+        color: #8c8eff !important;
+      }
+
+      html.dark-style .bg-label-info,
+      html[data-bs-theme="dark"] .bg-label-info {
+        background-color: rgba(3, 195, 236, 0.2) !important;
+        color: #4ed8f5 !important;
+      }
+
+      html.dark-style .bg-label-success,
+      html[data-bs-theme="dark"] .bg-label-success {
+        background-color: rgba(113, 221, 55, 0.2) !important;
+        color: #85e856 !important;
+      }
+
+      html.dark-style .bg-label-secondary,
+      html[data-bs-theme="dark"] .bg-label-secondary {
+        background-color: #3b3c54 !important;
+        color: #cfd3ec !important;
+      }
+
+      html.dark-style .bg-label-warning,
+      html[data-bs-theme="dark"] .bg-label-warning {
+        background-color: rgba(255, 171, 0, 0.2) !important;
+        color: #ffbe33 !important;
+      }
+
+      html.dark-style .list-group-item,
+      html[data-bs-theme="dark"] .list-group-item {
+        background-color: #2b2c40 !important;
+        color: #cfd3ec !important;
+        border-color: #3b3c54 !important;
+      }
+
+      html.dark-style .table-primary,
+      html[data-bs-theme="dark"] .table-primary {
+        --bs-table-bg: rgba(105, 108, 255, 0.2) !important;
+        --bs-table-color: #e4e6f4 !important;
+        background-color: rgba(105, 108, 255, 0.2) !important;
+        color: #e4e6f4 !important;
+      }
+      html.dark-style .table-primary td,
+      html[data-bs-theme="dark"] .table-primary td {
+        background-color: rgba(105, 108, 255, 0.2) !important;
+        color: #e4e6f4 !important;
+      }
+
+      html.dark-style .menu-link,
+      html.dark-style .menu-header,
+      html[data-bs-theme="dark"] .menu-link,
+      html[data-bs-theme="dark"] .menu-header {
+        color: #cfd3ec !important;
+      }
+
+      html.dark-style .menu-item.active .menu-link,
+      html[data-bs-theme="dark"] .menu-item.active .menu-link {
+        background-color: #696cff !important;
+        color: #ffffff !important;
+      }
+
+      html.dark-style .table,
+      html.dark-style .table td,
+      html.dark-style .table th,
+      html[data-bs-theme="dark"] .table,
+      html[data-bs-theme="dark"] .table td,
+      html[data-bs-theme="dark"] .table th {
+        color: #cfd3ec !important;
+        border-color: #3b3c54 !important;
+      }
+
+      html.dark-style .form-control,
+      html.dark-style .form-select,
+      html[data-bs-theme="dark"] .form-control,
+      html[data-bs-theme="dark"] .form-select {
+        background-color: #32344d !important;
+        border-color: #444564 !important;
+        color: #cfd3ec !important;
+      }
+
+      html.dark-style .dropdown-menu,
+      html[data-bs-theme="dark"] .dropdown-menu {
+        background-color: #2b2c40 !important;
+        border-color: #3b3c54 !important;
+        box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.45) !important;
+      }
+
+      html.dark-style .dropdown-item,
+      html[data-bs-theme="dark"] .dropdown-item {
+        color: #cfd3ec !important;
+      }
+
+      html.dark-style .dropdown-item:hover,
+      html[data-bs-theme="dark"] .dropdown-item:hover {
+        background-color: #3b3c54 !important;
+      }
+
+      /* Tabs & Pills Dark Mode */
+      html.dark-style .nav-tabs .nav-link,
+      html[data-bs-theme="dark"] .nav-tabs .nav-link {
+        color: #cfd3ec !important;
+        background-color: transparent !important;
+      }
+      html.dark-style .nav-tabs .nav-link.active,
+      html[data-bs-theme="dark"] .nav-tabs .nav-link.active {
+        color: #ffffff !important;
+        background-color: #2b2c40 !important;
+        border-color: #3b3c54 #3b3c54 #2b2c40 !important;
+      }
+      html.dark-style .nav-pills .nav-link:not(.active),
+      html[data-bs-theme="dark"] .nav-pills .nav-link:not(.active) {
+        color: #cfd3ec !important;
+        background-color: #232333 !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      }
+      html.dark-style .nav-pills .nav-link:not(.active):hover,
+      html[data-bs-theme="dark"] .nav-pills .nav-link:not(.active):hover {
+        color: #ffffff !important;
+        background-color: #2f3046 !important;
+      }
+      html.dark-style .nav-pills .nav-link.active,
+      html[data-bs-theme="dark"] .nav-pills .nav-link.active {
+        background-color: #696cff !important;
+        color: #ffffff !important;
+        box-shadow: 0 2px 6px 0 rgba(105, 108, 255, 0.4) !important;
+      }
+
+      /* Modal Dark Mode */
+      html.dark-style .modal-content,
+      html[data-bs-theme="dark"] .modal-content {
+        background-color: #2b2c40 !important;
+        color: #cfd3ec !important;
+        border-color: #3b3c54 !important;
+        box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.5) !important;
+      }
+
+      html.dark-style .modal-header,
+      html.dark-style .modal-footer,
+      html[data-bs-theme="dark"] .modal-header,
+      html[data-bs-theme="dark"] .modal-footer {
+        border-color: #3b3c54 !important;
+      }
+
+      html.dark-style .modal-title,
+      html[data-bs-theme="dark"] .modal-title {
+        color: #ffffff !important;
+        font-weight: 700 !important;
+      }
+
+      html.dark-style .modal-body strong,
+      html[data-bs-theme="dark"] .modal-body strong {
+        color: #e4e6f4 !important;
+      }
+
+      html.dark-style .btn-close,
+      html[data-bs-theme="dark"] .btn-close {
+        filter: invert(1) grayscale(100%) brightness(200%) !important;
+      }
+
+      html.dark-style .modal .bg-light,
+      html[data-bs-theme="dark"] .modal .bg-light {
+        background-color: #232333 !important;
+        border-color: #3b3c54 !important;
+        color: #f1f5f9 !important;
+      }
+
+      html.dark-style .text-dark,
+      html.dark-style h1, html.dark-style h2, html.dark-style h3, html.dark-style h4, html.dark-style h5, html.dark-style h6,
+      html[data-bs-theme="dark"] .text-dark,
+      html[data-bs-theme="dark"] h1, html[data-bs-theme="dark"] h2, html[data-bs-theme="dark"] h3, html[data-bs-theme="dark"] h4, html[data-bs-theme="dark"] h5, html[data-bs-theme="dark"] h6 {
+        color: #e4e6f4 !important;
+      }
+
+      html.dark-style .text-muted,
+      html[data-bs-theme="dark"] .text-muted {
+        color: #8c8db9 !important;
+      }
+
+      html.dark-style .footer,
+      html[data-bs-theme="dark"] .footer {
+        color: #8c8db9 !important;
+      }
+
+      .theme-toggle-sneat {
+        border-radius: 50%;
+        width: 38px;
+        height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(110, 110, 110, 0.2);
+        background: transparent;
+        cursor: pointer;
+        transition: all 0.2s;
+        color: inherit;
+      }
+      .theme-toggle-sneat:hover {
+        background-color: rgba(105, 108, 255, 0.1);
+        border-color: #696cff;
+        color: #696cff;
+      }
+    </style>
+    <script is:inline>
+      (function () {
+        try {
+          var mode = localStorage.getItem('sneat-theme');
+          if (mode === 'dark' || (!mode && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.remove('light-style');
+            document.documentElement.classList.add('dark-style');
+            document.documentElement.setAttribute('data-bs-theme', 'dark');
+          } else {
+            document.documentElement.classList.remove('dark-style');
+            document.documentElement.classList.add('light-style');
+            document.documentElement.setAttribute('data-bs-theme', 'light');
+          }
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+
+  <body>
+    <!-- Layout wrapper -->
+    <div class="layout-wrapper layout-content-navbar">
+      <div class="layout-container">
+        <!-- Menu -->
+        <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
+          <div class="app-brand demo">
+            <a href="/admin" class="app-brand-link">
+              <span class="app-brand-logo demo">
+                <svg
+                  width="26"
+                  viewBox="0 0 25 42"
+                  version="1.1"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <defs>
+                    <path
+                      d="M13.7918663,0.358365126 L3.39788168,7.44174259 C0.566865006,9.69408886 -0.379795268,12.4788597 0.557900856,15.7960551 C0.68998853,16.2305145 1.09562888,17.7872135 3.12357076,19.2293357 C3.8146334,19.7207684 5.32369333,20.3834223 7.65075054,21.2172976 L7.50805387,21.706004 C7.1348208,22.963164 7.27181503,24.4004982 8.01865466,25.6644839 C8.76022388,26.9205567 10.0341586,27.8186216 11.4582151,28.098495 C11.8199595,28.1688842 12.3487058,28.210924 13.0444539,28.2246139 L12.9254009,28.616524 C12.5521678,29.873684 12.689162,31.3110182 13.4360017,32.5750039 C14.1775709,33.8310767 15.4515056,34.7291416 16.8755621,35.009015 C18.2996186,35.2888884 19.7708284,34.9351098 20.7712351,34.0809758 L24.6270504,30.8364598 C25.0420767,30.4998081 25.0682226,29.8974558 24.6853244,29.4948331 C24.5244727,29.3249051 24.3056085,29.2307605 24.0772295,29.2307605 L22.1466085,29.2307605 C21.3837169,29.2307605 20.6990085,28.8500057 20.2980647,28.2363456 L20.202187,28.098495 C19.8012432,27.4848349 19.7428882,26.7122083 20.0469446,26.0469279 L20.1265879,25.8718131 C20.663863,24.6946571 20.5369584,23.3275725 19.7901188,22.0635868 C19.0485496,20.807514 17.7746149,19.9094491 16.3505584,19.6295757 L16.3505584,19.6295757 C15.988814,19.5591865 15.4600677,19.5171467 14.7643196,19.5034568 L14.8833726,19.1115467 C15.2566057,17.8543867 15.1196115,16.4170525 14.3727718,15.1530668 C13.6312026,13.896994 12.3572679,12.9989291 10.9332114,12.7190557 C9.50915492,12.4391823 8.03794513,12.7929609 7.03753842,13.6470949 L4.92215865,15.4241511 C4.81525732,15.5139981 4.67843818,15.5645511 4.53658742,15.5645511 C4.39473666,15.5645511 4.25791752,15.5139981 4.15101619,15.4241511 L2.45447721,13.998492 C2.12462744,13.7212456 2.06821815,13.2384955 2.32785566,12.8906666 L8.52047872,4.60670984 C9.46788223,3.33917715 10.9995283,2.58022802 12.6074191,2.58022802 C13.3333333,2.58022802 14.0538053,2.73887966 14.7171477,3.04410173 L14.7918663,0.358365126 Z"
+                      id="path-1"
+                      fill="#696cff"
+                    ></path>
+                  </defs>
+                  <g id="g-app-brand" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                    <use xlink:href="#path-1"></use>
+                  </g>
+                </svg>
+              </span>
+              <span class="app-brand-text demo menu-text fw-bolder ms-2">AplikasiMedia</span>
+            </a>
+
+            <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto d-block d-xl-none">
+              <i class="bx bx-chevron-left bx-sm align-middle"></i>
+            </a>
+          </div>
+
+          <div class="menu-inner-shadow"></div>
+
+          <ul class="menu-inner py-1">
+            <li class="menu-header small text-uppercase">
+              <span class="menu-header-text">OVERVIEW</span>
+            </li>
+
+            <!-- Dashboard -->
+            <li class:list={["menu-item", activeMenu === "dashboard" && "active"]}>
+              <a href="/admin" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-home-circle"></i>
+                <div>Dashboard</div>
+              </a>
+            </li>
+
+            <li class="menu-header small text-uppercase">
+              <span class="menu-header-text">CONTENT</span>
+            </li>
+
+            <!-- Hero Section -->
+            <li class:list={["menu-item", activeMenu === "hero" && "active"]}>
+              <a href="/admin/hero" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-carousel"></i>
+                <div>Hero Section</div>
+              </a>
+            </li>
+
+            <!-- Projects -->
+            <li class:list={["menu-item", activeMenu === "projects" && "active"]}>
+              <a href="/admin/projects" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-briefcase"></i>
+                <div>Projects & Portfolio</div>
+              </a>
+            </li>
+
+            <!-- Posts / Artikel -->
+            <li class:list={["menu-item", activeMenu === "posts" && "active"]}>
+              <a href="/admin/posts" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-news"></i>
+                <div>Posts & Artikel</div>
+              </a>
+            </li>
+
+            <!-- Services -->
+            <li class:list={["menu-item", activeMenu === "services" && "active"]}>
+              <a href="/admin/services" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-server"></i>
+                <div>Services & Offer</div>
+              </a>
+            </li>
+
+            <!-- Skills -->
+            <li class:list={["menu-item", activeMenu === "skills" && "active"]}>
+              <a href="/admin/skills" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-code-alt"></i>
+                <div>Skills & Stack</div>
+              </a>
+            </li>
+
+            <!-- Testimonials -->
+            <li class:list={["menu-item", activeMenu === "testimonials" && "active"]}>
+              <a href="/admin/testimonials" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-chat"></i>
+                <div>Testimonials</div>
+              </a>
+            </li>
+
+            <!-- FAQs -->
+            <li class:list={["menu-item", activeMenu === "faqs" && "active"]}>
+              <a href="/admin/faqs" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-help-circle"></i>
+                <div>FAQs</div>
+              </a>
+            </li>
+
+            <li class="menu-header small text-uppercase">
+              <span class="menu-header-text">ADMINISTRATION</span>
+            </li>
+
+            <!-- Messages -->
+            <li class:list={["menu-item", activeMenu === "messages" && "active"]}>
+              <a href="/admin/messages" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-envelope"></i>
+                <div>Inbox Messages</div>
+              </a>
+            </li>
+
+            <!-- Settings / Pengaturan Konten -->
+            <li class:list={["menu-item", activeMenu === "settings" && "active"]}>
+              <a href="/admin/settings" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-slider-alt"></i>
+                <div>Pengaturan Konten</div>
+              </a>
+            </li>
+
+            <li class="menu-header small text-uppercase">
+              <span class="menu-header-text">Live Website</span>
+            </li>
+
+            <!-- Footer Sidebar Info -->
+            <li class="menu-item mt-4 px-3 d-none d-xl-block">
+              <div class="card bg-lighter border border-secondary shadow-none p-3 text-center rounded-3">
+                <span class="fw-bold d-block text-body">AplikasiMedia</span>
+                <small class="text-muted">v1.0.0</small>
+              </div>
+            </li>
+          </ul>
+        </aside>
+        <!-- / Menu -->
+
+        <!-- Layout container -->
+        <div class="layout-page">
+          <!-- Navbar -->
+          <nav
+            class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme"
+            id="layout-navbar"
+          >
+            <div class="layout-menu-toggle navbar-nav align-items-xl-center me-3 me-xl-0 d-xl-none">
+              <a class="nav-item nav-link px-0 me-xl-4" href="javascript:void(0)">
+                <i class="bx bx-menu bx-sm"></i>
+              </a>
+            </div>
+
+            <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
+              <div class="navbar-nav align-items-center flex-grow-1 me-3">
+                <div class="nav-item d-flex align-items-center w-100" style="max-width: 480px;">
+                  <i class="bx bx-search fs-4 lh-0 me-2 text-muted"></i>
+                  <input
+                    type="text"
+                    class="form-control border-0 shadow-none ps-1"
+                    placeholder="Cari apa saja di JavaScript..."
+                    aria-label="Search..."
+                  />
+                </div>
+              </div>
+
+              <ul class="navbar-nav flex-row align-items-center ms-auto">
+                <!-- Theme Toggle Button -->
+                <li class="nav-item me-2">
+                  <button type="button" class="theme-toggle-sneat" id="sneatThemeToggle" title="Ganti Mode Gelap / Terang">
+                    <i class="bx bx-moon" id="sneatThemeIcon"></i>
+                  </button>
+                </li>
+
+                <li class="nav-item me-3">
+                  <a href="/" target="_blank" class="btn btn-sm btn-outline-primary">
+                    <i class="bx bx-globe me-1"></i> Open Nova Front
+                  </a>
+                </li>
+
+                <!-- User -->
+                <li class="nav-item navbar-dropdown dropdown-user dropdown">
+                  <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown">
+                    <div class="avatar avatar-online">
+                      <img src="/admin-assets/img/avatars/1.png" alt class="w-px-40 h-auto rounded-circle" />
+                    </div>
+                  </a>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                      <a class="dropdown-item" href="/admin/settings">
+                        <div class="d-flex">
+                          <div class="flex-shrink-0 me-3">
+                            <div class="avatar avatar-online">
+                              <img src="/admin-assets/img/avatars/1.png" alt class="w-px-40 h-auto rounded-circle" />
+                            </div>
+                          </div>
+                          <div class="flex-grow-1">
+                            <span class="fw-semibold d-block">Admin / Owner</span>
+                            <small class="text-muted">Portfolio CMS</small>
+                          </div>
+                        </div>
+                      </a>
+                    </li>
+                    <li>
+                      <div class="dropdown-divider"></div>
+                    </li>
+                    <li>
+                      <a class="dropdown-item" href="/admin/settings">
+                        <i class="bx bx-cog me-2"></i>
+                        <span class="align-middle">Settings</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a class="dropdown-item" href="/admin/messages">
+                        <i class="bx bx-envelope me-2"></i>
+                        <span class="align-middle">Inbox</span>
+                      </a>
+                    </li>
+                    <li>
+                      <div class="dropdown-divider"></div>
+                    </li>
+                    <li>
+                      <a class="dropdown-item text-danger" href="javascript:void(0);" id="adminLogoutBtn">
+                        <i class="bx bx-power-off me-2"></i>
+                        <span class="align-middle">Keluar / Logout</span>
+                      </a>
+                    </li>
+                  </ul>
+                </li>
+                <!--/ User -->
+              </ul>
+            </div>
+          </nav>
+          <!-- / Navbar -->
+
+          <!-- Content wrapper -->
+          <div class="content-wrapper">
+            <!-- Content -->
+            <div class="container-xxl flex-grow-1 container-p-y">
+              <slot />
+            </div>
+            <!-- / Content -->
+
+            <!-- Footer -->
+            <footer class="content-footer footer bg-footer-theme">
+              <div class="container-xxl d-flex flex-wrap justify-content-between py-2 flex-md-row flex-column">
+                <div class="mb-2 mb-md-0">
+                  © 2026 Portfolio CMS with Sneat & Nova Astro. Database: SQLite.
+                </div>
+                <div>
+                  <a href="/" target="_blank" class="footer-link me-4">Nova Front</a>
+                  <a href="/admin/settings" class="footer-link me-4">Settings</a>
+                  <a href="/admin/messages" class="footer-link">Inbox</a>
+                </div>
+              </div>
+            </footer>
+            <!-- / Footer -->
+
+            <div class="content-backdrop fade"></div>
+          </div>
+          <!-- Content wrapper -->
+        </div>
+        <!-- / Layout page -->
+      </div>
+
+      <!-- Overlay -->
+      <div class="layout-overlay layout-menu-toggle"></div>
+    </div>
+    <!-- / Layout wrapper -->
+
+    <!-- Core JS -->
+    <script is:inline src="/admin-assets/vendor/libs/jquery/jquery.js"></script>
+    <script is:inline src="/admin-assets/vendor/libs/popper/popper.js"></script>
+    <script is:inline src="/admin-assets/vendor/js/bootstrap.js"></script>
+    <script is:inline src="/admin-assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js"></script>
+    <script is:inline src="/admin-assets/vendor/libs/apex-charts/apexcharts.js"></script>
+    <script is:inline src="/admin-assets/vendor/js/menu.js"></script>
+    <script is:inline src="/admin-assets/js/main.js"></script>
+
+    <script is:inline>
+      (function () {
+        var btn = document.getElementById('sneatThemeToggle');
+        var icon = document.getElementById('sneatThemeIcon');
+        if (!btn || !icon) return;
+
+        function updateIcon() {
+          var isDark = document.documentElement.classList.contains('dark-style');
+          if (isDark) {
+            icon.className = 'bx bx-sun text-warning fs-4';
+          } else {
+            icon.className = 'bx bx-moon fs-4';
+          }
+        }
+
+        updateIcon();
+
+        btn.addEventListener('click', function () {
+          var isDark = document.documentElement.classList.contains('dark-style');
+          if (isDark) {
+            document.documentElement.classList.remove('dark-style');
+            document.documentElement.classList.add('light-style');
+            document.documentElement.setAttribute('data-bs-theme', 'light');
+            localStorage.setItem('sneat-theme', 'light');
+          } else {
+            document.documentElement.classList.remove('light-style');
+            document.documentElement.classList.add('dark-style');
+            document.documentElement.setAttribute('data-bs-theme', 'dark');
+            localStorage.setItem('sneat-theme', 'dark');
+          }
+          updateIcon();
+        });
+      })();
+    </script>
+    <script is:inline>
+      const logoutBtn = document.getElementById('adminLogoutBtn');
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', async (e) => {
+          e.preventDefault();
+          if (confirm('Apakah Anda yakin ingin keluar dari panel CMS?')) {
+            try {
+              const res = await fetch('/api/admin/logout', { method: 'POST' });
+              if (res.ok) {
+                window.location.href = '/admin/login';
+              }
+            } catch (err) {
+              window.location.href = '/admin/login';
+            }
+          }
+        });
+      }
+    </script>
+  </body>
+</html>

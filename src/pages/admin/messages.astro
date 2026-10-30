@@ -1,0 +1,281 @@
+---
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import db from '@utils/db';
+
+export const prerender = false;
+
+const messages = db.prepare('SELECT * FROM messages ORDER BY id DESC').all() as any[];
+---
+
+<AdminLayout title="Inbox Messages" activeMenu="messages">
+  <div class="row">
+    <div class="col-12 mb-4">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <div class="d-flex align-items-center gap-2">
+            <h5 class="mb-0">Pesan Masuk (Form Kontak Website)</h5>
+            <span class="badge bg-label-success d-flex align-items-center gap-1" id="liveIndicator">
+              <span class="spinner-grow spinner-grow-sm text-success" style="width: 8px; height: 8px;" role="status" aria-hidden="true"></span>
+              Live Sync
+            </span>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-label-primary fs-7" id="msgCountBadge">{messages.length} Total Pesan</span>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="btnManualRefresh" title="Refresh Sekarang">
+              <i class="bx bx-refresh"></i>
+            </button>
+          </div>
+        </div>
+        <div class="table-responsive text-nowrap">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>Waktu</th>
+                <th>Pengirim</th>
+                <th>Email</th>
+                <th>Subjek</th>
+                <th>Pesan</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="messagesTableBody" class="table-border-bottom-0">
+              {messages.map((m) => (
+                <tr id={`row-${m.id}`}>
+                  <td><small class="text-muted">{m.created_at}</small></td>
+                  <td><strong>{m.name}</strong></td>
+                  <td><a href={`mailto:${m.email}`} class="text-primary">{m.email}</a></td>
+                  <td><span class="badge bg-label-info">{m.subject || 'General'}</span></td>
+                  <td>
+                    <button type="button" class="btn btn-xs btn-outline-secondary view-msg-btn" data-msg={m.message} data-name={m.name} data-email={m.email} data-sub={m.subject} data-time={m.created_at}>
+                      Baca Pesan Lengkap
+                    </button>
+                  </td>
+                  <td>
+                    <button type="button" class="btn btn-xs btn-outline-danger del-msg-btn" data-id={m.id}>
+                      <i class="bx bx-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {messages.length === 0 && (
+                <tr id="emptyRow">
+                  <td colspan="6" class="text-center py-4 text-muted">Belum ada pesan kontak yang masuk.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal View Message -->
+  <div class="modal fade" id="msgModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="msgModalTitle">Pesan dari Pengunjung</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-2"><strong>Pengirim:</strong> <span id="mSender"></span></div>
+          <div class="mb-2"><strong>Email:</strong> <span id="mEmail"></span></div>
+          <div class="mb-2"><strong>Subjek:</strong> <span id="mSubject"></span></div>
+          <div class="mb-3"><strong>Waktu:</strong> <span id="mTime"></span></div>
+          <div class="border rounded p-3 bg-light">
+            <p id="mContent" class="mb-0 text-break" style="white-space: pre-wrap;"></p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Tutup</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification untuk Pesan Baru -->
+  <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1090">
+    <div id="newMsgToast" class="toast align-items-center text-bg-primary border-0" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body d-flex align-items-center gap-2">
+          <i class="bx bx-bell fs-4"></i>
+          <div>
+            <strong>Pesan Baru Masuk!</strong>
+            <div id="newMsgToastText" class="small text-white-50"></div>
+          </div>
+        </div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+    </div>
+  </div>
+
+  <script is:inline>
+    (function() {
+      let knownIds = new Set();
+      // Inisialisasi ID yang ada di DOM awal
+      document.querySelectorAll('#messagesTableBody tr[id^="row-"]').forEach(tr => {
+        const id = tr.id.replace('row-', '');
+        if (id) knownIds.add(Number(id));
+      });
+
+      function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
+
+      const tbody = document.getElementById('messagesTableBody');
+      const countBadge = document.getElementById('msgCountBadge');
+
+      // Event delegation untuk Tombol Lihat & Hapus
+      tbody.addEventListener('click', async (e) => {
+        const viewBtn = e.target.closest('.view-msg-btn');
+        if (viewBtn) {
+          const d = viewBtn.dataset;
+          document.getElementById('mSender').innerText = d.name;
+          document.getElementById('mEmail').innerText = d.email;
+          document.getElementById('mSubject').innerText = d.sub || 'General';
+          document.getElementById('mTime').innerText = d.time;
+          document.getElementById('mContent').innerText = d.msg;
+
+          const modal = new bootstrap.Modal(document.getElementById('msgModal'));
+          modal.show();
+          return;
+        }
+
+        const delBtn = e.target.closest('.del-msg-btn');
+        if (delBtn) {
+          const id = delBtn.dataset.id;
+          if (!confirm('Hapus pesan ini dari database?')) return;
+
+          try {
+            const res = await fetch('/api/admin/messages', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'delete', id }),
+            });
+            if (res.ok) {
+              document.getElementById(`row-${id}`)?.remove();
+              knownIds.delete(Number(id));
+              updateTotalCount();
+            } else {
+              alert('Gagal menghapus pesan');
+            }
+          } catch (err) {
+            alert('Error: ' + err.message);
+          }
+        }
+      });
+
+      function updateTotalCount() {
+        const rows = tbody.querySelectorAll('tr[id^="row-"]');
+        const count = rows.length;
+        if (countBadge) countBadge.innerText = `${count} Total Pesan`;
+
+        let emptyRow = document.getElementById('emptyRow');
+        if (count === 0) {
+          if (!emptyRow) {
+            tbody.innerHTML = '<tr id="emptyRow"><td colspan="6" class="text-center py-4 text-muted">Belum ada pesan kontak yang masuk.</td></tr>';
+          }
+        } else if (emptyRow) {
+          emptyRow.remove();
+        }
+      }
+
+      function renderMessageRow(m) {
+        return `
+          <tr id="row-${m.id}" class="new-row-pulse">
+            <td><small class="text-muted">${escapeHtml(m.created_at)}</small></td>
+            <td><strong>${escapeHtml(m.name)}</strong></td>
+            <td><a href="mailto:${escapeHtml(m.email)}" class="text-primary">${escapeHtml(m.email)}</a></td>
+            <td><span class="badge bg-label-info">${escapeHtml(m.subject || 'General')}</span></td>
+            <td>
+              <button type="button" class="btn btn-xs btn-outline-secondary view-msg-btn"
+                data-msg="${escapeHtml(m.message)}"
+                data-name="${escapeHtml(m.name)}"
+                data-email="${escapeHtml(m.email)}"
+                data-sub="${escapeHtml(m.subject)}"
+                data-time="${escapeHtml(m.created_at)}">
+                Baca Pesan Lengkap
+              </button>
+            </td>
+            <td>
+              <button type="button" class="btn btn-xs btn-outline-danger del-msg-btn" data-id="${m.id}">
+                <i class="bx bx-trash"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }
+
+      function showToastNotification(name, subject) {
+        const toastEl = document.getElementById('newMsgToast');
+        const toastText = document.getElementById('newMsgToastText');
+        if (!toastEl) return;
+        toastText.innerText = `Dari: ${name} (${subject || 'General'})`;
+        const toast = new bootstrap.Toast(toastEl, { delay: 4000 });
+        toast.show();
+      }
+
+      async function fetchMessages(showToastOnNew = true) {
+        try {
+          const res = await fetch('/api/admin/messages?t=' + Date.now());
+          if (!res.ok) return;
+          const data = await res.json();
+          const list = data.messages || [];
+
+          let hasNew = false;
+          let newestSender = '';
+          let newestSubject = '';
+
+          // Cek jika ada item baru yang belum ada di knownIds
+          for (let i = list.length - 1; i >= 0; i--) {
+            const m = list[i];
+            if (!knownIds.has(m.id)) {
+              hasNew = true;
+              knownIds.add(m.id);
+              newestSender = m.name;
+              newestSubject = m.subject;
+
+              // Hapus empty row jika ada
+              const emptyRow = document.getElementById('emptyRow');
+              if (emptyRow) emptyRow.remove();
+
+              // Sisipkan baris baru di paling atas
+              tbody.insertAdjacentHTML('afterbegin', renderMessageRow(m));
+
+              // Bersihkan class efek setelah 3 detik
+              setTimeout(() => {
+                const tr = document.getElementById(`row-${m.id}`);
+                if (tr) tr.classList.remove('new-row-pulse', 'table-primary');
+              }, 3000);
+            }
+          }
+
+          if (hasNew) {
+            updateTotalCount();
+            if (showToastOnNew) {
+              showToastNotification(newestSender, newestSubject);
+            }
+          }
+        } catch (e) {
+          console.error('Polling error:', e);
+        }
+      }
+
+      // Manual Refresh Button
+      document.getElementById('btnManualRefresh')?.addEventListener('click', () => {
+        fetchMessages(false);
+      });
+
+      // Polling setiap 3 detik secara background otomatis
+      setInterval(() => {
+        fetchMessages(true);
+      }, 3000);
+    })();
+  </script>
+</AdminLayout>

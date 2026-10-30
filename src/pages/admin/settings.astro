@@ -1,0 +1,461 @@
+---
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import db from '@utils/db';
+
+export const prerender = false;
+
+const rows = db.prepare('SELECT key, value FROM site_settings').all() as { key: string; value: string }[];
+const settings: Record<string, string> = {};
+for (const r of rows) {
+  settings[r.key] = r.value;
+}
+
+// Data Hero
+const hero = db.prepare('SELECT * FROM hero WHERE id = 1').get() as any;
+const trustItems = typeof hero?.trustItems === 'string' ? JSON.parse(hero.trustItems) : (hero?.trustItems || []);
+const stats = typeof hero?.stats === 'string' ? JSON.parse(hero.stats) : (hero?.stats || []);
+---
+
+<AdminLayout title="Pengaturan Tampilan Konten" activeMenu="settings">
+  <div class="row">
+    <div class="col-12 mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h4 class="fw-bold mb-1">Pengaturan & Edit Tampilan Konten</h4>
+          <p class="text-muted mb-0">Kelola identitas situs, konten hero, dan section footer dalam satu tab navigasi terpadu.</p>
+        </div>
+        <a href="/" target="_blank" class="btn btn-outline-primary btn-sm">
+          <i class="bx bx-globe me-1"></i> Preview Front Nova
+        </a>
+      </div>
+
+      <!-- Tab Navigation -->
+      <div class="nav-align-top mb-4">
+        <ul class="nav nav-pills mb-3" role="tablist">
+          <li class="nav-item">
+            <button
+              type="button"
+              class="nav-link active"
+              role="tab"
+              data-bs-toggle="tab"
+              data-bs-target="#tab-hero"
+              aria-controls="tab-hero"
+              aria-selected="true"
+            >
+              <i class="bx bx-carousel me-1"></i> 1. Hero & Header
+            </button>
+          </li>
+          <li class="nav-item">
+            <button
+              type="button"
+              class="nav-link"
+              role="tab"
+              data-bs-toggle="tab"
+              data-bs-target="#tab-profile"
+              aria-controls="tab-profile"
+              aria-selected="false"
+            >
+              <i class="bx bx-user me-1"></i> 2. Identitas & Profil
+            </button>
+          </li>
+          <li class="nav-item">
+            <button
+              type="button"
+              class="nav-link"
+              role="tab"
+              data-bs-toggle="tab"
+              data-bs-target="#tab-footer"
+              aria-controls="tab-footer"
+              aria-selected="false"
+            >
+              <i class="bx bx-dock-bottom me-1"></i> 3. Bottom CTA & Footer
+            </button>
+          </li>
+          <li class="nav-item">
+            <button
+              type="button"
+              class="nav-link"
+              role="tab"
+              data-bs-toggle="tab"
+              data-bs-target="#tab-seo"
+              aria-controls="tab-seo"
+              aria-selected="false"
+            >
+              <i class="bx bx-share-alt me-1"></i> 4. Metadata & Sosmed
+            </button>
+          </li>
+        </ul>
+
+        <!-- Form Terpadu -->
+        <form id="settingsForm">
+          <div class="tab-content border-0 p-0 shadow-none bg-transparent">
+            <!-- TAB 1: HERO & HEADER -->
+            <div class="tab-pane fade show active" id="tab-hero" role="tabpanel">
+              <div class="card mb-4">
+                <div class="card-header border-bottom">
+                  <h5 class="mb-0">Hero Section & Navbar Atas</h5>
+                  <small class="text-muted">Mengatur teks brand di navbar serta teks banner utama di landing page</small>
+                </div>
+                <div class="card-body mt-3">
+                  <div class="row">
+                    <div class="mb-3 col-md-6">
+                      <label class="form-label" for="site_logo_text">Teks Logo Header</label>
+                      <input type="text" class="form-control" id="site_logo_text" value={settings.site_logo_text || 'NOVA'} />
+                      <small class="text-muted">Tulisan brand di pojok kiri atas navigasi</small>
+                    </div>
+                    <div class="mb-3 col-md-6">
+                      <label class="form-label" for="nav_cta_label">Teks Tombol CTA Header</label>
+                      <input type="text" class="form-control" id="nav_cta_label" value={settings.nav_cta_label || 'Start a project'} />
+                      <small class="text-muted">Tombol aksi utama di pojok kanan atas navbar</small>
+                    </div>
+                  </div>
+
+                  <hr class="my-3" />
+
+                  <div class="row">
+                    <div class="mb-3 col-md-4">
+                      <label class="form-label" for="hero_eyebrow">Eyebrow / Tagline Kecil</label>
+                      <input type="text" class="form-control" id="hero_eyebrow" value={hero?.eyebrow || ''} required />
+                    </div>
+                    <div class="mb-3 col-md-4">
+                      <label class="form-label" for="hero_heading">Headline Bagian 1</label>
+                      <input type="text" class="form-control" id="hero_heading" value={hero?.heading || ''} required />
+                    </div>
+                    <div class="mb-3 col-md-4">
+                      <label class="form-label" for="hero_headingAccent">Headline Bagian 2 (Aksen Warna)</label>
+                      <input type="text" class="form-control" id="hero_headingAccent" value={hero?.headingAccent || ''} required />
+                    </div>
+                  </div>
+
+                  <div class="mb-3">
+                    <label class="form-label" for="hero_description">Deskripsi Singkat Hero</label>
+                    <textarea class="form-control" id="hero_description" rows="3">{hero?.description || ''}</textarea>
+                  </div>
+
+                  <div class="row">
+                    <div class="mb-3 col-md-3">
+                      <label class="form-label" for="hero_primaryCTA_label">Label Tombol 1</label>
+                      <input type="text" class="form-control" id="hero_primaryCTA_label" value={hero?.primaryCTA_label || 'Lihat Portfolio'} />
+                    </div>
+                    <div class="mb-3 col-md-3">
+                      <label class="form-label" for="hero_primaryCTA_href">Link Tombol 1</label>
+                      <input type="text" class="form-control" id="hero_primaryCTA_href" value={hero?.primaryCTA_href || '#realizacje'} />
+                    </div>
+                    <div class="mb-3 col-md-3">
+                      <label class="form-label" for="hero_secondaryCTA_label">Label Tombol 2</label>
+                      <input type="text" class="form-control" id="hero_secondaryCTA_label" value={hero?.secondaryCTA_label || 'Hubungi Saya'} />
+                    </div>
+                    <div class="mb-3 col-md-3">
+                      <label class="form-label" for="hero_secondaryCTA_href">Link Tombol 2</label>
+                      <input type="text" class="form-control" id="hero_secondaryCTA_href" value={hero?.secondaryCTA_href || '#contact'} />
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div class="mb-3 col-md-6">
+                      <label class="form-label" for="hero_trustedBy">Label Tech Stack Hero</label>
+                      <input type="text" class="form-control" id="hero_trustedBy" value={hero?.trustedBy || 'Teknologi Favorit'} />
+                    </div>
+                    <div class="mb-3 col-md-6">
+                      <label class="form-label" for="hero_trustItems">Pill Tech Stack (Pisahkan dengan koma)</label>
+                      <input type="text" class="form-control" id="hero_trustItems" value={Array.isArray(trustItems) ? trustItems.join(', ') : ''} />
+                    </div>
+                  </div>
+
+                  <label class="form-label fw-bold mb-2">4 Counter Statistik Hero:</label>
+                  <div class="row g-2 mb-3">
+                    <div class="col-md-3">
+                      <input type="text" class="form-control mb-1" id="stat_v1" placeholder="Nilai (15+)" value={stats[0]?.value || ''} />
+                      <input type="text" class="form-control" id="stat_l1" placeholder="Label (Proyek Selesai)" value={stats[0]?.label || ''} />
+                    </div>
+                    <div class="col-md-3">
+                      <input type="text" class="form-control mb-1" id="stat_v2" placeholder="Nilai (3+)" value={stats[1]?.value || ''} />
+                      <input type="text" class="form-control" id="stat_l2" placeholder="Label (Tahun Pengalaman)" value={stats[1]?.label || ''} />
+                    </div>
+                    <div class="col-md-3">
+                      <input type="text" class="form-control mb-1" id="stat_v3" placeholder="Nilai (100%)" value={stats[2]?.value || ''} />
+                      <input type="text" class="form-control" id="stat_l3" placeholder="Label (Komitmen Kualitas)" value={stats[2]?.label || ''} />
+                    </div>
+                    <div class="col-md-3">
+                      <input type="text" class="form-control mb-1" id="stat_v4" placeholder="Nilai (24/7)" value={stats[3]?.value || ''} />
+                      <input type="text" class="form-control" id="stat_l4" placeholder="Label (Dukungan)" value={stats[3]?.label || ''} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 2: IDENTITAS & PROFIL -->
+            <div class="tab-pane fade" id="tab-profile" role="tabpanel">
+              <div class="card mb-4">
+                <div class="card-header border-bottom">
+                  <h5 class="mb-0">Informasi Pemilik & Kontak</h5>
+                  <small class="text-muted">Data ini ditampilkan di footer, bio situs, dan info komunikasi</small>
+                </div>
+                <div class="card-body mt-3">
+                  <div class="row">
+                    <div class="mb-3 col-md-6">
+                      <label class="form-label" for="owner_name">Nama Lengkap</label>
+                      <input type="text" class="form-control" id="owner_name" value={settings.owner_name || ''} required />
+                    </div>
+                    <div class="mb-3 col-md-6">
+                      <label class="form-label" for="owner_title">Gelar / Spesialisasi Keahlian</label>
+                      <input type="text" class="form-control" id="owner_title" value={settings.owner_title || ''} required />
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div class="mb-3 col-md-6">
+                      <label class="form-label" for="owner_email">Email Kontak</label>
+                      <input type="email" class="form-control" id="owner_email" value={settings.owner_email || ''} required />
+                    </div>
+                    <div class="mb-3 col-md-6">
+                      <label class="form-label" for="owner_phone">No. WhatsApp / HP</label>
+                      <input type="text" class="form-control" id="owner_phone" value={settings.owner_phone || ''} />
+                    </div>
+                  </div>
+
+                  <div class="mb-3">
+                    <label class="form-label" for="owner_address">Lokasi Domisili</label>
+                    <input type="text" class="form-control" id="owner_address" value={settings.owner_address || ''} />
+                  </div>
+
+                  <div class="mb-3">
+                    <label class="form-label" for="owner_bio">Bio / Ringkasan Profil</label>
+                    <textarea id="owner_bio" class="form-control" rows="3">{settings.owner_bio || ''}</textarea>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 3: BOTTOM CTA & FOOTER -->
+            <div class="tab-pane fade" id="tab-footer" role="tabpanel">
+              <div class="card mb-4">
+                <div class="card-header border-bottom">
+                  <h5 class="mb-0">Section Bawah (Bottom Banner CTA & Footer)</h5>
+                  <small class="text-muted">Mengatur teks ajakan kolaborasi di atas footer serta atribusi hak cipta</small>
+                </div>
+                <div class="card-body mt-3">
+                  <div class="row">
+                    <div class="mb-3 col-md-6">
+                      <label class="form-label" for="footer_eyebrow">Eyebrow CTA Bawah</label>
+                      <input type="text" class="form-control" id="footer_eyebrow" value={settings.footer_eyebrow || 'BRAND ANDA LAYAK MENDAPATKAN LEBIH'} />
+                    </div>
+                    <div class="mb-3 col-md-6">
+                      <label class="form-label" for="footer_heading">Judul CTA Bawah</label>
+                      <input type="text" class="form-control" id="footer_heading" value={settings.footer_heading || 'Mari Berkolaborasi Bersama'} />
+                    </div>
+                  </div>
+
+                  <div class="mb-3">
+                    <label class="form-label" for="footer_description">Deskripsi Penawaran CTA</label>
+                    <textarea id="footer_description" class="form-control" rows="2">{settings.footer_description || 'Diskusikan ide proyek Anda sekarang dan mari wujudkan solusi digital terbaik untuk perkembangan bisnis Anda.'}</textarea>
+                  </div>
+
+                  <div class="row">
+                    <div class="mb-3 col-md-3">
+                      <label class="form-label" for="footer_primary_label">Label Tombol 1</label>
+                      <input type="text" class="form-control" id="footer_primary_label" value={settings.footer_primary_label || 'Hubungi Sekarang'} />
+                    </div>
+                    <div class="mb-3 col-md-3">
+                      <label class="form-label" for="footer_primary_href">Link Tombol 1</label>
+                      <input type="text" class="form-control" id="footer_primary_href" value={settings.footer_primary_href || '#contact'} />
+                    </div>
+                    <div class="mb-3 col-md-3">
+                      <label class="form-label" for="footer_secondary_label">Label Tombol 2</label>
+                      <input type="text" class="form-control" id="footer_secondary_label" value={settings.footer_secondary_label || 'Lihat Layanan'} />
+                    </div>
+                    <div class="mb-3 col-md-3">
+                      <label class="form-label" for="footer_secondary_href">Link Tombol 2</label>
+                      <input type="text" class="form-control" id="footer_secondary_href" value={settings.footer_secondary_href || '#services'} />
+                    </div>
+                  </div>
+
+                  <hr class="my-3" />
+
+                  <div class="row">
+                    <div class="mb-3 col-md-6">
+                      <label class="form-label" for="footer_copyright">Teks Hak Cipta / Copyright</label>
+                      <input type="text" class="form-control" id="footer_copyright" value={settings.footer_copyright || 'All rights reserved.'} />
+                    </div>
+                    <div class="mb-3 col-md-6">
+                      <label class="form-label" for="footer_attribution_prefix">Awalan Teks Kredit</label>
+                      <input type="text" class="form-control" id="footer_attribution_prefix" value={settings.footer_attribution_prefix || 'Desain dan Pengembangan oleh '} />
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div class="mb-3 col-md-6">
+                      <label class="form-label" for="footer_attribution_label">Nama Pembuat / Label Kredit</label>
+                      <input type="text" class="form-control" id="footer_attribution_label" value={settings.footer_attribution_label || 'Finn'} />
+                    </div>
+                    <div class="mb-3 col-md-6">
+                      <label class="form-label" for="footer_attribution_href">URL Tautan Kredit</label>
+                      <input type="text" class="form-control" id="footer_attribution_href" value={settings.footer_attribution_href || '/'} />
+                    </div>
+                  </div>
+
+                  <div class="mb-3">
+                    <label class="form-label" for="footer_about">Deskripsi Ringkas Tambahan Footer</label>
+                    <textarea id="footer_about" class="form-control" rows="2">{settings.footer_about || ''}</textarea>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 4: METADATA & SOSMED -->
+            <div class="tab-pane fade" id="tab-seo" role="tabpanel">
+              <div class="card mb-4">
+                <div class="card-header border-bottom">
+                  <h5 class="mb-0">Metadata SEO & Tautan Sosial Media</h5>
+                  <small class="text-muted">Judul browser, tagline, serta akun media sosial Anda</small>
+                </div>
+                <div class="card-body mt-3">
+                  <div class="row">
+                    <div class="mb-3 col-md-6">
+                      <label class="form-label" for="site_title">Judul Web (Browser Tab Title)</label>
+                      <input type="text" class="form-control" id="site_title" value={settings.site_title || ''} required />
+                    </div>
+                    <div class="mb-3 col-md-6">
+                      <label class="form-label" for="site_tagline">Slogan / Tagline Website</label>
+                      <input type="text" class="form-control" id="site_tagline" value={settings.site_tagline || ''} />
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div class="mb-3 col-md-4">
+                      <label class="form-label" for="social_github">Tautan GitHub</label>
+                      <input type="text" class="form-control" id="social_github" value={settings.social_github || ''} />
+                    </div>
+                    <div class="mb-3 col-md-4">
+                      <label class="form-label" for="social_linkedin">Tautan LinkedIn</label>
+                      <input type="text" class="form-control" id="social_linkedin" value={settings.social_linkedin || ''} />
+                    </div>
+                    <div class="mb-3 col-md-4">
+                      <label class="form-label" for="social_twitter">Tautan Twitter / X</label>
+                      <input type="text" class="form-control" id="social_twitter" value={settings.social_twitter || ''} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sticky Action Bar -->
+          <div class="card p-3 shadow-sm d-flex flex-row align-items-center justify-content-between">
+            <div class="d-flex align-items-center">
+              <i class="bx bx-check-circle text-success fs-4 me-2"></i>
+              <span class="text-muted small">Semua tab di atas disimpan bersamaan ke database SQLite.</span>
+            </div>
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-primary px-4" id="saveSetBtn">
+                <i class="bx bx-save me-1"></i> Simpan Semua Pengaturan
+              </button>
+            </div>
+          </div>
+
+          <div id="alertBox" class="mt-3" style="display:none;"></div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script is:inline>
+    const form = document.getElementById('settingsForm');
+    const alertBox = document.getElementById('alertBox');
+    const saveBtn = document.getElementById('saveSetBtn');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      saveBtn.disabled = true;
+      saveBtn.innerText = 'Menyimpan...';
+
+      // 1. Payload Site Settings
+      const settingsPayload = {
+        site_logo_text: document.getElementById('site_logo_text').value,
+        nav_cta_label: document.getElementById('nav_cta_label').value,
+        owner_name: document.getElementById('owner_name').value,
+        owner_title: document.getElementById('owner_title').value,
+        owner_email: document.getElementById('owner_email').value,
+        owner_phone: document.getElementById('owner_phone').value,
+        owner_address: document.getElementById('owner_address').value,
+        owner_bio: document.getElementById('owner_bio').value,
+        site_title: document.getElementById('site_title').value,
+        site_tagline: document.getElementById('site_tagline').value,
+        social_github: document.getElementById('social_github').value,
+        social_linkedin: document.getElementById('social_linkedin').value,
+        social_twitter: document.getElementById('social_twitter').value,
+        footer_about: document.getElementById('footer_about').value,
+        footer_eyebrow: document.getElementById('footer_eyebrow').value,
+        footer_heading: document.getElementById('footer_heading').value,
+        footer_description: document.getElementById('footer_description').value,
+        footer_primary_label: document.getElementById('footer_primary_label').value,
+        footer_primary_href: document.getElementById('footer_primary_href').value,
+        footer_secondary_label: document.getElementById('footer_secondary_label').value,
+        footer_secondary_href: document.getElementById('footer_secondary_href').value,
+        footer_copyright: document.getElementById('footer_copyright').value,
+        footer_attribution_prefix: document.getElementById('footer_attribution_prefix').value,
+        footer_attribution_label: document.getElementById('footer_attribution_label').value,
+        footer_attribution_href: document.getElementById('footer_attribution_href').value,
+      };
+
+      // 2. Payload Hero Section
+      const trustItemsRaw = document.getElementById('hero_trustItems').value;
+      const trustItems = trustItemsRaw.split(',').map(s => s.trim()).filter(Boolean);
+      const stats = [
+        { value: document.getElementById('stat_v1').value, label: document.getElementById('stat_l1').value },
+        { value: document.getElementById('stat_v2').value, label: document.getElementById('stat_l2').value },
+        { value: document.getElementById('stat_v3').value, label: document.getElementById('stat_l3').value },
+        { value: document.getElementById('stat_v4').value, label: document.getElementById('stat_l4').value },
+      ];
+
+      const heroPayload = {
+        site_logo_text: document.getElementById('site_logo_text').value,
+        nav_cta_label: document.getElementById('nav_cta_label').value,
+        eyebrow: document.getElementById('hero_eyebrow').value,
+        heading: document.getElementById('hero_heading').value,
+        headingAccent: document.getElementById('hero_headingAccent').value,
+        description: document.getElementById('hero_description').value,
+        primaryCTA_label: document.getElementById('hero_primaryCTA_label').value,
+        primaryCTA_href: document.getElementById('hero_primaryCTA_href').value,
+        secondaryCTA_label: document.getElementById('hero_secondaryCTA_label').value,
+        secondaryCTA_href: document.getElementById('hero_secondaryCTA_href').value,
+        trustedBy: document.getElementById('hero_trustedBy').value,
+        trustItems,
+        stats,
+      };
+
+      try {
+        const [resSet, resHero] = await Promise.all([
+          fetch('/api/admin/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(settingsPayload),
+          }),
+          fetch('/api/admin/hero', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(heroPayload),
+          }),
+        ]);
+
+        alertBox.style.display = 'block';
+        if (resSet.ok && resHero.ok) {
+          alertBox.className = 'alert alert-success';
+          alertBox.innerText = 'Semua perubahan konten (Hero, Profil, Footer, SEO) berhasil disimpan ke SQLite!';
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+          alertBox.className = 'alert alert-danger';
+          alertBox.innerText = 'Gagal menyimpan salah satu bagian. Silakan periksa kembali formulir.';
+        }
+      } catch (err) {
+        alertBox.style.display = 'block';
+        alertBox.className = 'alert alert-danger';
+        alertBox.innerText = 'Koneksi error: ' + err.message;
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.innerText = 'Simpan Semua Pengaturan';
+      }
+    });
+  </script>
+</AdminLayout>

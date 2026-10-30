@@ -1,0 +1,364 @@
+---
+import Layout from "@layouts/Layout.astro";
+import db from "@utils/db";
+import type { NovaLocale } from "@utils/nova-i18n";
+
+// Components
+import NovaHeroResponsiveBlock from "@components/registry/hero/NovaHeroResponsiveBlock.astro";
+import ProjectsBlock from "@components/registry/portfolio/ProjectsBlock.astro";
+import ServicesHomeBlock from "@components/registry/services/ServicesHomeBlock.astro";
+import TestimonialV2Block from "@components/registry/social/TestimonialV2Block.astro";
+import Faq3Block from "@components/registry/faq/Faq3Block.astro";
+
+// 1. Fetch data from SQLite safely
+let heroRow: any = null;
+let trustItems: string[] = [];
+let stats: any[] = [];
+let projects: any[] = [];
+let services: any[] = [];
+let skills: any[] = [];
+let testimonials: any[] = [];
+let faqs: any[] = [];
+let posts: any[] = [];
+let settings: Record<string, string> = {};
+
+try {
+  heroRow = db.prepare('SELECT * FROM hero WHERE id = 1').get() as any;
+  trustItems = typeof heroRow?.trustItems === 'string' ? JSON.parse(heroRow.trustItems) : (heroRow?.trustItems || []);
+  stats = typeof heroRow?.stats === 'string' ? JSON.parse(heroRow.stats) : (heroRow?.stats || []);
+
+  projects = db.prepare("SELECT * FROM projects ORDER BY sort_order ASC, id ASC").all() as any[];
+  services = db.prepare("SELECT * FROM services ORDER BY sort_order ASC, id ASC").all() as any[];
+  skills = db.prepare("SELECT * FROM skills ORDER BY id ASC").all() as any[];
+  testimonials = db.prepare("SELECT * FROM testimonials ORDER BY sort_order ASC, id ASC").all() as any[];
+  faqs = db.prepare("SELECT * FROM faqs ORDER BY sort_order ASC, id ASC").all() as any[];
+  posts = db.prepare("SELECT * FROM posts WHERE status = 'published' ORDER BY id DESC LIMIT 3").all() as any[];
+
+  const settingRows = db.prepare("SELECT key, value FROM site_settings").all() as { key: string; value: string }[];
+  for (const r of settingRows) {
+    settings[r.key] = r.value;
+  }
+} catch (e) {
+  console.error('[Database Read Error]:', e);
+  return Astro.redirect('/404');
+}
+
+const hero = heroRow;
+
+const {
+  site_logo_text = 'NOVA',
+  nav_cta_label = 'Start a project',
+} = settings;
+
+const siteTitle = settings.site_title || "Portfolio & CMS";
+const siteDesc = settings.owner_bio || "Full-Stack Portfolio with Sneat Admin & SQLite";
+const currentLocale: NovaLocale = (Astro.url.searchParams.get('lang') === 'en' ? 'en' : 'id') as NovaLocale;
+---
+
+<Layout
+  title={siteTitle}
+  description={siteDesc}
+  theme="nova"
+  sectionPattern="mesh"
+  navbarVariant="floating"
+  footerVariant="nova"
+  fullBleedTop={true}
+  locale={currentLocale}
+  lang={currentLocale}
+>
+  <!-- Hero Section (Dynamic SQLite) -->
+  <NovaHeroResponsiveBlock
+    eyebrow={heroRow?.eyebrow}
+    heading={heroRow?.heading}
+    headingAccent={heroRow?.headingAccent}
+    description={heroRow?.description}
+    primaryCTA={{ label: heroRow?.primaryCTA_label, href: heroRow?.primaryCTA_href }}
+    secondaryCTA={{ label: heroRow?.secondaryCTA_label, href: heroRow?.secondaryCTA_href }}
+    trustedBy={heroRow?.trustedBy}
+    trustItems={trustItems}
+    stats={stats}
+    image={heroRow?.image}
+    imageAlt={heroRow?.imageAlt}
+  />
+
+  <!-- Projects / Portfolio Section (Dynamic SQLite) -->
+  <ProjectsBlock
+    title="Karya & Portfolio Pilihan"
+    description="Koleksi proyek nyata yang menggabungkan desain estetis, arsitektur modern, dan performa tinggi."
+    items={projects.map(p => ({
+      category: p.category,
+      title: p.title,
+      image: p.image,
+      alt: p.alt || p.title,
+      link: p.link || "#realizacje"
+    }))}
+  />
+
+  <!-- Skills & Stack Section (Creative Design Integration) -->
+  <section id="skills" class="relative z-[1] py-20 bg-brand-dark/5 border-y border-black/5 dark:border-white/5">
+    <div class="ui-container mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div class="mb-12 text-center max-w-2xl mx-auto">
+        <span class="text-xs font-bold uppercase tracking-widest text-primary">Technical Expertise</span>
+        <h2 class="text-3xl font-extrabold tracking-tight sm:text-4xl mt-2 text-brand-dark">Keahlian & Kemampuan Teknis</h2>
+        <p class="mt-3 text-muted-foreground text-sm sm:text-base">
+          Berbekal pemahaman mendalam tentang ekosistem frontend modern (React 19, Next.js, Astro), integrasi backend, dan sistem database.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {skills.map((s) => (
+          <div class="p-6 rounded-2xl bg-white dark:bg-card shadow-sm border border-border/50 hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between mb-3">
+              <span class="font-bold text-base text-foreground">{s.name}</span>
+              <span class="text-xs px-2.5 py-0.5 rounded-full font-semibold bg-primary/10 text-primary">{s.category}</span>
+            </div>
+            <div class="w-full bg-muted rounded-full h-2.5 overflow-hidden">
+              <div class="bg-primary h-2.5 rounded-full transition-all duration-500" style={`width: ${s.level}%`}></div>
+            </div>
+            <div class="mt-2 text-right text-xs font-semibold text-muted-foreground">{s.level}% Proficiency</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Services Section (Dynamic SQLite) -->
+  <ServicesHomeBlock
+    id="services"
+    title="Layanan & Solusi Digital"
+    description="Dukungan komprehensif mulai dari perencanaan arsitektur, UI/UX, implementasi kode hingga optimasi performa."
+    items={services.map(s => ({
+      number: s.number,
+      icon: s.icon,
+      title: s.title,
+      description: s.description
+    }))}
+  />
+
+  <!-- Blog / Artikel & Tulisan Pilihan Section (Sinkronisasi SQLite CMS) -->
+  {posts && posts.length > 0 && (
+    <section id="blog" class="relative z-[1] py-20 bg-brand-dark/5 border-b border-black/5 dark:border-white/5">
+      <div class="ui-container mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div class="mb-8 text-center max-w-2xl mx-auto">
+          <span class="text-xs font-bold uppercase tracking-widest text-primary">Tech Notes & Insights</span>
+          <h2 class="text-3xl font-extrabold tracking-tight sm:text-4xl mt-2 text-brand-dark">Artikel & Tulisan Terbaru</h2>
+          <p class="mt-3 text-muted-foreground text-sm sm:text-base">
+            Wawasan teknologi, arsitektur software, serta eksplorasi optimasi performa web yang saya tulis secara berkala.
+          </p>
+        </div>
+
+        <!-- Filter Tabs Kategori Artikel -->
+        {(() => {
+          const categories = ['Semua', ...Array.from(new Set(posts.map(p => p.category).filter(Boolean)))];
+          return (
+            <div class="flex items-center justify-center gap-2 mb-10 overflow-x-auto pb-2" id="blog-category-filter">
+              {categories.map((cat, idx) => (
+                <button
+                  type="button"
+                  data-category={cat}
+                  class:list={[
+                    "blog-tab-btn px-4 py-2 rounded-full text-xs font-bold tracking-wide transition-all duration-200 border cursor-pointer",
+                    idx === 0
+                      ? "active bg-amber-600 text-white border-amber-600 shadow-sm"
+                      : "bg-zinc-100 dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 border-zinc-300 dark:border-zinc-700 hover:border-amber-500 hover:text-amber-500"
+                  ]}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          );
+        })()}
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" id="blog-posts-grid">
+          {posts.map((post) => (
+            <article data-post-category={post.category} class="blog-card-item flex flex-col rounded-2xl bg-white dark:bg-card border border-border/60 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group">
+              <a href={`/blog/${post.slug}`} class="aspect-video w-full overflow-hidden bg-muted relative block">
+                <img
+                  src={post.image || '/assets/images/t001-nova/t001-nova-project-laptop.webp'}
+                  alt={post.title}
+                  loading="lazy"
+                  decoding="async"
+                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <span class="absolute top-3 left-3 bg-brand-dark/80 backdrop-blur-md text-white text-xs px-2.5 py-1 rounded-full font-medium">
+                  {post.category}
+                </span>
+              </a>
+              <div class="p-6 flex flex-col flex-1">
+                <div class="flex items-center gap-2 text-xs text-muted-foreground mb-3">
+                  <span>{post.created_at ? post.created_at.split(' ')[0] : 'Baru'}</span>
+                  <span>•</span>
+                  <span><i class="ph ph-eye me-1"></i>{post.views || 0} views</span>
+                </div>
+                <h3 class="text-lg font-bold text-foreground mb-2 group-hover:text-primary transition-colors line-clamp-2">
+                  <a href={`/blog/${post.slug}`} class="hover:underline">
+                    {post.title}
+                  </a>
+                </h3>
+                <p class="text-sm text-muted-foreground mb-4 line-clamp-3 flex-1">
+                  {post.excerpt || post.content?.slice(0, 120)}
+                </p>
+                <div class="pt-3 border-t border-border/40 flex items-center justify-between text-xs font-semibold text-primary">
+                  <span>Oleh {post.author || 'Finn'}</span>
+                  <a href={`/blog/${post.slug}`} class="group-hover:translate-x-1 transition-transform inline-flex items-center gap-1 font-bold">
+                    Baca Selengkapnya &rarr;
+                  </a>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+
+        <script is:inline>
+          const setupBlogTabs = () => {
+            const filterBtns = document.querySelectorAll('.blog-tab-btn');
+            const postCards = document.querySelectorAll('.blog-card-item');
+
+            filterBtns.forEach(btn => {
+              btn.addEventListener('click', () => {
+                const category = btn.getAttribute('data-category');
+                
+                filterBtns.forEach(b => {
+                  b.classList.remove('active');
+                });
+
+                btn.classList.add('active');
+
+                postCards.forEach(card => {
+                  const cardCat = card.getAttribute('data-post-category');
+                  if (category === 'Semua' || cardCat === category) {
+                    card.style.display = 'flex';
+                  } else {
+                    card.style.display = 'none';
+                  }
+                });
+              });
+            });
+          };
+
+          document.addEventListener('DOMContentLoaded', setupBlogTabs);
+          document.addEventListener('astro:page-load', setupBlogTabs);
+        </script>
+      </div>
+    </section>
+  )}
+
+  <!-- Testimonials Section (Dynamic SQLite) -->
+  <TestimonialV2Block
+    sectionId="opinie"
+    title="Apa Kata Klien & Rekan Kerja"
+    description="Kolaborasi yang terpercaya menghasilkan dampak nyata bagi pertumbuhan produk dan kepuasan pengguna."
+    tagline="Testimoni"
+    items={testimonials.map(t => ({
+      quote: t.quote,
+      author: t.author,
+      role: t.role,
+      avatar: t.avatar,
+      initials: t.initials
+    }))}
+  />
+
+  <!-- FAQs Section (Dynamic SQLite) -->
+  <Faq3Block
+    sectionId="faq"
+    title="Pertanyaan yang Sering Diajukan"
+    description="Informasi seputar proses kerja, waktu implementasi, serta pengelolaan mandiri."
+    tagline="FAQ"
+    items={faqs.map(f => ({
+      q: f.question,
+      a: f.answer
+    }))}
+  />
+
+  <!-- Contact Form Section (Connects to /api/contact & Inbox Messages in SQLite) -->
+  <section id="contact" class="relative z-[2] py-20 bg-background">
+    <div class="ui-container mx-auto max-w-4xl px-4 sm:px-6">
+      <div class="text-center max-w-xl mx-auto mb-12">
+        <span class="text-xs font-bold uppercase tracking-widest text-primary">Get in Touch</span>
+        <h2 class="text-3xl font-extrabold sm:text-4xl mt-2 text-foreground">Hubungi Saya</h2>
+        <p class="mt-3 text-muted-foreground text-sm sm:text-base">
+          Ada ide proyek atau tawaran kerja sama? Kirimkan pesan di bawah ini, tersimpan aman di database offline.
+        </p>
+      </div>
+
+      <div class="p-8 sm:p-10 rounded-3xl bg-card border border-border shadow-xl">
+        <form id="frontContactForm" class="space-y-6">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div>
+              <label for="c_name" class="block text-sm font-semibold mb-2 text-foreground">Nama Lengkap</label>
+              <input type="text" id="c_name" required placeholder="Nama Anda" class="w-full px-4 py-3 rounded-xl border border-input bg-background text-foreground focus:ring-2 focus:ring-primary focus:outline-none" />
+            </div>
+            <div>
+              <label for="c_email" class="block text-sm font-semibold mb-2 text-foreground">Alamat Email</label>
+              <input type="email" id="c_email" required placeholder="email@contoh.com" class="w-full px-4 py-3 rounded-xl border border-input bg-background text-foreground focus:ring-2 focus:ring-primary focus:outline-none" />
+            </div>
+          </div>
+
+          <div>
+            <label for="c_subject" class="block text-sm font-semibold mb-2 text-foreground">Subjek / Topik</label>
+            <input type="text" id="c_subject" placeholder="Diskusi Proyek Web / Penawaran" class="w-full px-4 py-3 rounded-xl border border-input bg-background text-foreground focus:ring-2 focus:ring-primary focus:outline-none" />
+          </div>
+
+          <div>
+            <label for="c_message" class="block text-sm font-semibold mb-2 text-foreground">Isi Pesan</label>
+            <textarea id="c_message" required rows="4" placeholder="Tuliskan detail kebutuhan atau pertanyaan Anda..." class="w-full px-4 py-3 rounded-xl border border-input bg-background text-foreground focus:ring-2 focus:ring-primary focus:outline-none"></textarea>
+          </div>
+
+          <div class="flex items-center justify-start pt-2">
+            <button type="submit" id="c_btn" class="ui-button ui-button-primary px-8 py-3 rounded-xl font-bold transition-all shadow-md hover:shadow-lg">
+              Kirim Pesan Sekarang 🚀
+            </button>
+          </div>
+
+          <div id="c_status" class="hidden p-4 rounded-xl text-sm font-medium"></div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+		{/* Floating Sneat CMS Quick Switcher Widget dihapus sesuai permintaan */}
+  <script is:inline>
+    const form = document.getElementById('frontContactForm');
+    const statusBox = document.getElementById('c_status');
+    const btn = document.getElementById('c_btn');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      btn.disabled = true;
+      btn.innerText = 'Mengirim Pesan...';
+
+      const payload = {
+        name: document.getElementById('c_name').value,
+        email: document.getElementById('c_email').value,
+        subject: document.getElementById('c_subject').value,
+        message: document.getElementById('c_message').value,
+      };
+
+      try {
+        const res = await fetch('/api/contact', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const result = await res.json();
+        statusBox.classList.remove('hidden');
+        if (res.ok) {
+          statusBox.className = 'p-4 rounded-xl text-sm font-medium bg-green-500/10 text-green-600 border border-green-500/20';
+          statusBox.innerText = '✅ ' + (result.message || 'Pesan Anda berhasil terkirim dan tersimpan di database SQLite!');
+          form.reset();
+        } else {
+          statusBox.className = 'p-4 rounded-xl text-sm font-medium bg-red-500/10 text-red-600 border border-red-500/20';
+          statusBox.innerText = '❌ Gagal: ' + (result.error || 'Terjadi kesalahan');
+        }
+      } catch (err) {
+        statusBox.classList.remove('hidden');
+        statusBox.className = 'p-4 rounded-xl text-sm font-medium bg-red-500/10 text-red-600 border border-red-500/20';
+        statusBox.innerText = '❌ Error jaringan: ' + err.message;
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Kirim Pesan Sekarang 🚀';
+      }
+    });
+  </script>
+</Layout>

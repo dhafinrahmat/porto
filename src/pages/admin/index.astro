@@ -1,0 +1,504 @@
+---
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import db from '@utils/db';
+
+export const prerender = false;
+
+const projectCount = (db.prepare('SELECT count(*) as c FROM projects').get() as { c: number }).c;
+const postCount = (db.prepare('SELECT count(*) as c FROM posts').get() as { c: number }).c;
+const serviceCount = (db.prepare('SELECT count(*) as c FROM services').get() as { c: number }).c;
+const skillCount = (db.prepare('SELECT count(*) as c FROM skills').get() as { c: number }).c;
+const messageCount = (db.prepare('SELECT count(*) as c FROM messages').get() as { c: number }).c;
+
+const recentMessages = db.prepare('SELECT * FROM messages ORDER BY id DESC LIMIT 5').all() as any[];
+const recentProjects = db.prepare('SELECT * FROM projects ORDER BY id DESC LIMIT 4').all() as any[];
+const topPosts = db.prepare('SELECT * FROM posts ORDER BY views DESC, id DESC LIMIT 5').all() as any[];
+const projectsByCategory = db.prepare('SELECT category, count(*) as count FROM projects GROUP BY category').all() as any[];
+const postsByCategory = db.prepare('SELECT category, count(*) as count FROM posts GROUP BY category').all() as any[];
+const hero = db.prepare('SELECT * FROM hero WHERE id = 1').get() as any;
+---
+
+<AdminLayout title="Dashboard CMS" activeMenu="dashboard">
+  <!-- Welcome / Header Section (Persis seperti screenshot image_a2bd1f) -->
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
+    <div>
+      <h3 class="fw-bold mb-1">Dashboard CMS</h3>
+      <p class="text-muted mb-0">Selamat datang kembali! Kelola proyek, portofolio, artikel teknologi, dan konfigurasi sistem dengan cepat.</p>
+    </div>
+    <div class="mt-3 mt-md-0 d-flex gap-2">
+      <a href="/admin/posts" class="btn btn-primary">
+        <i class="bx bx-plus me-1"></i> Tulis Artikel
+      </a>
+      <a href="/" target="_blank" class="btn btn-outline-secondary">
+        <i class="bx bx-globe me-1"></i> Lihat Web
+      </a>
+    </div>
+  </div>
+
+  <!-- Row 1: KPI Cards (TOTAL PROJECTS, PUBLISHED POSTS, PENGGUNA AKTIF) -->
+  <div class="row">
+    <!-- Total Projects -->
+    <div class="col-sm-6 col-lg-4 mb-4">
+      <div class="card card-border-shadow-primary h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-2 pb-1">
+            <div class="avatar me-3">
+              <span class="avatar-initial rounded bg-label-primary"><i class="bx bx-folder fs-4"></i></span>
+            </div>
+            <h4 class="ms-1 mb-0">{projectCount}</h4>
+          </div>
+          <p class="mb-1 fw-bold text-uppercase fs-7 text-muted">Total Projects</p>
+          <div class="d-flex align-items-center">
+            <span class="badge bg-label-success me-2"><i class="bx bx-up-arrow-alt"></i> +200%</span>
+            <small class="text-muted">vs periode sebelumnya</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Published Posts -->
+    <div class="col-sm-6 col-lg-4 mb-4">
+      <div class="card card-border-shadow-warning h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-2 pb-1">
+            <div class="avatar me-3">
+              <span class="avatar-initial rounded bg-label-danger"><i class="bx bx-file fs-4"></i></span>
+            </div>
+            <h4 class="ms-1 mb-0">{postCount}</h4>
+          </div>
+          <p class="mb-1 fw-bold text-uppercase fs-7 text-muted">Published Posts</p>
+          <div class="d-flex align-items-center">
+            <span class="badge bg-label-warning me-2"><i class="bx bx-trending-up"></i> +50%</span>
+            <small class="text-muted">vs periode sebelumnya</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pengguna Aktif -->
+    <div class="col-sm-6 col-lg-4 mb-4">
+      <div class="card card-border-shadow-success h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-2 pb-1">
+            <div class="avatar me-3">
+              <span class="avatar-initial rounded bg-label-success"><i class="bx bx-user fs-4"></i></span>
+            </div>
+            <h4 class="ms-1 mb-0">7</h4>
+          </div>
+          <p class="mb-1 fw-bold text-uppercase fs-7 text-muted">Pengguna Aktif</p>
+          <div class="d-flex align-items-center">
+            <span class="badge bg-label-success me-2"><i class="bx bx-up-arrow-alt"></i> +100%</span>
+            <small class="text-muted">Visitor & Administrator</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 2: Aktivitas Sistem (Interactive Area Chart) & Top 5 Artikel -->
+  <div class="row">
+    <!-- Aktivitas Sistem Chart -->
+    <div class="col-12 col-lg-8 mb-4">
+      <div class="card h-100">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div>
+            <h5 class="card-title mb-0">Aktivitas Sistem</h5>
+            <small class="text-muted">Tren volume real & visitor tercatat pada sistem.</small>
+          </div>
+          <div class="d-flex align-items-center">
+            <span class="badge bg-label-primary px-3 py-2 fw-bold fs-7">
+              Total Event: 36
+            </span>
+          </div>
+        </div>
+        <div class="card-body px-2">
+          <div id="systemActivityChart" style="min-height: 280px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top 5 Artikel Populer -->
+    <div class="col-12 col-lg-4 mb-4">
+      <div class="card h-100">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div>
+            <h5 class="card-title mb-0">Top 5 Artikel</h5>
+            <small class="text-muted">Berdasarkan view terbanyak</small>
+          </div>
+          <a href="/admin/posts" class="btn btn-xs btn-outline-primary">Semua</a>
+        </div>
+        <div class="card-body">
+          <ul class="p-0 m-0">
+            {topPosts.map((post, idx) => (
+              <li class="d-flex mb-3 pb-2 align-items-center border-bottom border-bottom-dashed">
+                <div class="avatar flex-shrink-0 me-3">
+                  <span class={`avatar-initial rounded-circle ${idx === 0 ? 'bg-label-warning fw-bold' : idx === 1 ? 'bg-label-info fw-bold' : 'bg-label-secondary'}`}>
+                    {idx + 1}
+                  </span>
+                </div>
+                <div class="d-flex w-100 flex-wrap align-items-center justify-content-between gap-2">
+                  <div class="me-2" style="max-width: 170px;">
+                    <h6 class="mb-0 text-truncate" title={post.title}>{post.title}</h6>
+                    <small class="text-muted">{post.category}</small>
+                  </div>
+                  <div class="user-progress">
+                    <span class="badge bg-label-primary fw-semibold">{post.views || 0} views</span>
+                  </div>
+                </div>
+              </li>
+            ))}
+            {topPosts.length === 0 && (
+              <li class="text-muted text-center py-4">Belum ada data artikel.</li>
+            )}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 3: Distribusi Kategori (Proyek per Kategori & Artikel per Kategori) -->
+  <div class="row">
+    <!-- Proyek per Kategori -->
+    <div class="col-12 col-md-6 mb-4">
+      <div class="card h-100">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div>
+            <h5 class="card-title mb-0">Proyek per Kategori</h5>
+            <small class="text-muted">Distribusi proyek berdasarkan kategori.</small>
+          </div>
+          <a href="/admin/projects" class="btn btn-xs btn-outline-primary">Kelola</a>
+        </div>
+        <div class="card-body">
+          <div class="row align-items-center">
+            <div class="col-md-6 mb-3 mb-md-0">
+              <div id="projectCategoryChart"></div>
+            </div>
+            <div class="col-md-6">
+              <ul class="list-unstyled mb-0">
+                {projectsByCategory.map((p) => (
+                  <li class="d-flex justify-content-between mb-2 pb-1">
+                    <span class="text-muted">{p.category}</span>
+                    <strong class="badge bg-label-primary">{p.count}</strong>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Artikel per Kategori -->
+    <div class="col-12 col-md-6 mb-4">
+      <div class="card h-100">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div>
+            <h5 class="card-title mb-0">Artikel per Kategori</h5>
+            <small class="text-muted">Distribusi artikel berdasarkan kategori.</small>
+          </div>
+          <a href="/admin/posts" class="btn btn-xs btn-outline-primary">Kelola</a>
+        </div>
+        <div class="card-body">
+          <div class="row align-items-center">
+            <div class="col-md-6 mb-3 mb-md-0">
+              <div id="postCategoryChart"></div>
+            </div>
+            <div class="col-md-6">
+              <ul class="list-unstyled mb-0">
+                {postsByCategory.map((a) => (
+                  <li class="d-flex justify-content-between mb-2 pb-1">
+                    <span class="text-muted">{a.category}</span>
+                    <strong class="badge bg-label-warning">{a.count}</strong>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- Active Hero Preview -->
+    <div class="col-md-6 col-lg-4 col-xl-4 order-0 mb-4">
+      <div class="card h-100">
+        <div class="card-header d-flex align-items-center justify-content-between pb-0">
+          <div class="card-title mb-0">
+            <h5 class="m-0 me-2">Hero Section Aktif</h5>
+            <small class="text-muted">Tampilan paling atas halaman depan</small>
+          </div>
+          <a href="/admin/hero" class="btn btn-xs btn-outline-primary">Edit</a>
+        </div>
+        <div class="card-body mt-3">
+          <div class="d-flex align-items-start mb-3">
+            <div class="badge bg-label-primary me-2"><i class="bx bx-tag"></i></div>
+            <div>
+              <small class="text-muted d-block">Eyebrow</small>
+              <strong>{hero?.eyebrow || 'N/A'}</strong>
+            </div>
+          </div>
+          <div class="d-flex align-items-start mb-3">
+            <div class="badge bg-label-info me-2"><i class="bx bx-heading"></i></div>
+            <div>
+              <small class="text-muted d-block">Headline Utama</small>
+              <strong>{hero?.heading} <span class="text-primary">{hero?.headingAccent}</span></strong>
+            </div>
+          </div>
+          <div class="mb-3">
+            <small class="text-muted d-block">Deskripsi</small>
+            <p class="text-muted fs-7 mb-0">{hero?.description}</p>
+          </div>
+          <div class="d-flex gap-2">
+            <span class="badge bg-label-secondary">{hero?.primaryCTA_label}</span>
+            <span class="badge bg-label-secondary">{hero?.secondaryCTA_label}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Projects -->
+    <div class="col-md-6 col-lg-4 order-1 mb-4">
+      <div class="card h-100">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <h5 class="card-title m-0 me-2">Daftar Project Portofolio</h5>
+          <a href="/admin/projects" class="btn btn-xs btn-outline-primary">Kelola</a>
+        </div>
+        <div class="card-body">
+          <ul class="p-0 m-0">
+            {recentProjects.map((proj) => (
+              <li class="d-flex mb-4 pb-1 align-items-center">
+                <div class="avatar flex-shrink-0 me-3">
+                  <img src={proj.image} alt={proj.title} class="rounded" style="object-fit: cover;" />
+                </div>
+                <div class="d-flex w-100 flex-wrap align-items-center justify-content-between gap-2">
+                  <div class="me-2">
+                    <h6 class="mb-0">{proj.title}</h6>
+                    <small class="text-muted">{proj.category}</small>
+                  </div>
+                  <div class="user-progress">
+                    <span class="badge bg-label-primary">Order #{proj.sort_order}</span>
+                  </div>
+                </div>
+              </li>
+            ))}
+            {recentProjects.length === 0 && <li class="text-muted">Belum ada project yang ditambahkan.</li>}
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top Posts / Artikel Terpopuler (Widget seperti CMS di gambar) -->
+    <div class="col-md-6 col-lg-4 order-2 mb-4">
+      <div class="card h-100">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <h5 class="card-title m-0 me-2">Top Artikel Populer</h5>
+          <a href="/admin/posts" class="btn btn-xs btn-outline-primary">Lihat Semua</a>
+        </div>
+        <div class="card-body">
+          <ul class="p-0 m-0">
+            {topPosts.map((post, idx) => (
+              <li class="d-flex mb-3 pb-1 align-items-center">
+                <div class="avatar flex-shrink-0 me-3">
+                  <span class={`avatar-initial rounded ${idx === 0 ? 'bg-label-warning' : idx === 1 ? 'bg-label-info' : 'bg-label-secondary'}`}>
+                    #{idx + 1}
+                  </span>
+                </div>
+                <div class="d-flex w-100 flex-wrap align-items-center justify-content-between gap-2">
+                  <div class="me-2" style="max-width: 170px;">
+                    <h6 class="mb-0 text-truncate">{post.title}</h6>
+                    <small class="text-muted">{post.category}</small>
+                  </div>
+                  <div class="user-progress">
+                    <span class="badge bg-label-primary"><i class="bx bx-show me-1"></i>{post.views || 0}</span>
+                  </div>
+                </div>
+              </li>
+            ))}
+            {topPosts.length === 0 && <li class="text-muted text-center py-4">Belum ada artikel.</li>}
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Inbox Messages -->
+    <div class="col-md-6 col-lg-4 order-3 mb-4">
+      <div class="card h-100">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <h5 class="card-title m-0 me-2">Pesan Masuk Terbaru</h5>
+          <a href="/admin/messages" class="btn btn-xs btn-outline-primary">Lihat Semua</a>
+        </div>
+        <div class="card-body">
+          <ul class="p-0 m-0" id="dashRecentMessagesList">
+            {recentMessages.map((msg) => (
+              <li class="d-flex mb-4 pb-1">
+                <div class="avatar flex-shrink-0 me-3">
+                  <span class="avatar-initial rounded bg-label-warning"><i class="bx bx-user"></i></span>
+                </div>
+                <div class="d-flex w-100 flex-wrap align-items-center justify-content-between gap-2">
+                  <div class="me-2">
+                    <small class="text-muted d-block">{msg.created_at}</small>
+                    <h6 class="mb-0">{msg.name}</h6>
+                    <p class="text-muted small mb-0 text-truncate" style="max-width: 180px;">{msg.message}</p>
+                  </div>
+                  <div class="user-progress">
+                    <span class="badge bg-label-info">{msg.subject || 'General'}</span>
+                  </div>
+                </div>
+              </li>
+            ))}
+            {recentMessages.length === 0 && (
+              <li class="text-muted text-center py-4">Belum ada pesan kontak yang masuk.</li>
+            )}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script is:inline>
+    // ApexCharts initializer untuk grafik Aktivitas Sistem & Distribusi Kategori
+    document.addEventListener('DOMContentLoaded', function () {
+      if (typeof ApexCharts === 'undefined') return;
+
+      var isDark = document.documentElement.classList.contains('dark-style');
+      var labelColor = isDark ? '#a1acb8' : '#697a8d';
+      var borderColor = isDark ? '#444564' : '#eceef1';
+
+      // 1. Aktivitas Sistem (Area Chart Oranye persis gambar screenshot)
+      var activityEl = document.querySelector('#systemActivityChart');
+      if (activityEl) {
+        var options = {
+          series: [
+            {
+              name: 'Aktivitas / Event',
+              data: [6, 12, 10, 15, 20, 36],
+            },
+          ],
+          chart: {
+            height: 280,
+            type: 'area',
+            toolbar: { show: false },
+            parentHeightOffset: 0,
+          },
+          dataLabels: { enabled: false },
+          stroke: {
+            curve: 'smooth',
+            width: 3,
+            colors: ['#ffab00'],
+          },
+          fill: {
+            type: 'gradient',
+            gradient: {
+              shadeIntensity: 1,
+              opacityFrom: 0.5,
+              opacityTo: 0.05,
+              stops: [0, 95, 100],
+              colorStops: [
+                { offset: 0, color: '#ffab00', opacity: 0.45 },
+                { offset: 100, color: '#ffab00', opacity: 0.0 },
+              ],
+            },
+          },
+          colors: ['#ffab00'],
+          xaxis: {
+            categories: ['8 Okt', '10 Okt', '11 Okt', '12 Okt', '13 Okt', '14 Okt'],
+            axisBorder: { show: false },
+            axisTicks: { show: false },
+            labels: {
+              style: { colors: labelColor, fontSize: '12px' },
+            },
+          },
+          yaxis: {
+            labels: {
+              style: { colors: labelColor, fontSize: '12px' },
+            },
+          },
+          grid: {
+            borderColor: borderColor,
+            strokeDashArray: 4,
+          },
+          tooltip: {
+            theme: isDark ? 'dark' : 'light',
+          },
+        };
+        var activityChart = new ApexCharts(activityEl, options);
+        activityChart.render();
+      }
+
+      // 2. Proyek per Kategori Donut Chart
+      var projCatEl = document.querySelector('#projectCategoryChart');
+      if (projCatEl) {
+        var projOptions = {
+          series: [40, 35, 25],
+          chart: { height: 160, type: 'donut' },
+          labels: ['Web Development', 'UI/UX & SaaS', 'Full-stack System'],
+          colors: ['#696cff', '#03c3ec', '#71dd37'],
+          dataLabels: { enabled: false },
+          legend: { show: false },
+          stroke: { width: 0 },
+        };
+        new ApexCharts(projCatEl, projOptions).render();
+      }
+
+      // 3. Artikel per Kategori Donut Chart
+      var postCatEl = document.querySelector('#postCategoryChart');
+      if (postCatEl) {
+        var postOptions = {
+          series: [50, 30, 20],
+          chart: { height: 160, type: 'donut' },
+          labels: ['Teknologi', 'Performance', 'Development'],
+          colors: ['#ffab00', '#ff3e1d', '#20c997'],
+          dataLabels: { enabled: false },
+          legend: { show: false },
+          stroke: { width: 0 },
+        };
+        new ApexCharts(postCatEl, postOptions).render();
+      }
+    });
+
+    // Live update widget pesan di dashboard utama
+    (function() {
+      async function syncDashboardMessages() {
+        try {
+          const res = await fetch('/api/admin/messages?t=' + Date.now());
+          if (!res.ok) return;
+          const data = await res.json();
+          const list = data.messages || [];
+
+          const countEl = document.getElementById('dashMsgCount');
+          if (countEl) countEl.innerText = list.length;
+
+          const ul = document.getElementById('dashRecentMessagesList');
+          if (!ul) return;
+
+          if (list.length === 0) {
+            ul.innerHTML = '<li class="text-muted text-center py-4">Belum ada pesan kontak yang masuk.</li>';
+            return;
+          }
+
+          const topThree = list.slice(0, 3);
+          ul.innerHTML = topThree.map(msg => `
+            <li class="d-flex mb-4 pb-1">
+              <div class="avatar flex-shrink-0 me-3">
+                <span class="avatar-initial rounded bg-label-warning"><i class="bx bx-user"></i></span>
+              </div>
+              <div class="d-flex w-100 flex-wrap align-items-center justify-content-between gap-2">
+                <div class="me-2">
+                  <small class="text-muted d-block">${msg.created_at || ''}</small>
+                  <h6 class="mb-0">${msg.name}</h6>
+                  <p class="text-muted small mb-0 text-truncate" style="max-width: 180px;">${msg.message}</p>
+                </div>
+                <div class="user-progress">
+                  <span class="badge bg-label-info">${msg.subject || 'General'}</span>
+                </div>
+              </div>
+            </li>
+          `).join('');
+        } catch (e) {}
+      }
+
+      setInterval(syncDashboardMessages, 4000);
+    })();
+  </script>
+</AdminLayout>

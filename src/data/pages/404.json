@@ -1,0 +1,21 @@
+{
+  "enabled": true,
+  "title": "404 - Halaman Tidak Ditemukan",
+  "heading": "Halaman Tidak Ditemukan",
+  "body": "Mohon maaf, halaman yang Anda cari tidak tersedia atau sistem sedang dalam pemeliharaan.",
+  "cta1": {
+    "label": "Kembali ke Beranda",
+    "hover": "Beranda",
+    "href": "/"
+  },
+  "cta2": {
+    "label": "Hubungi Kami",
+    "hover": "Kontak",
+    "href": "/#contact"
+  },
+  "seo": {
+    "title": "404 - Halaman Tidak Ditemukan",
+    "description": "Halaman yang Anda tuju tidak ditemukan."
+  },
+  "sections": []
+}

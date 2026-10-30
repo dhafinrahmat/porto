@@ -1,0 +1,259 @@
+---
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import db from '@utils/db';
+
+export const prerender = false;
+
+const posts = db.prepare('SELECT * FROM posts ORDER BY id DESC').all() as any[];
+---
+
+<AdminLayout title="Manajemen Posts & Artikel" activeMenu="posts">
+  <div class="row">
+    <div class="col-12 mb-4">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div>
+            <h5 class="mb-0">Daftar Artikel & Tulisan Blog</h5>
+            <small class="text-muted">Kelola publikasi artikel teknologi dan catatan portfolio Anda</small>
+          </div>
+          <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#postModal" id="addPostBtn">
+            <i class="bx bx-plus me-1"></i> Tulis Artikel Baru
+          </button>
+        </div>
+        <div class="table-responsive text-nowrap">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>Cover</th>
+                <th>Judul Artikel</th>
+                <th>Kategori</th>
+                <th>Status</th>
+                <th>Views</th>
+                <th>Tanggal</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody class="table-border-bottom-0">
+              {posts.map((p) => (
+                <tr id={`row-${p.id}`}>
+                  <td>
+                    <img src={p.image} alt={p.title} class="rounded" style="width: 55px; height: 38px; object-fit: cover;" />
+                  </td>
+                  <td>
+                    <strong>{p.title}</strong>
+                    <div class="small text-muted text-truncate" style="max-width: 250px;">/{p.slug}</div>
+                  </td>
+                  <td><span class="badge bg-label-info">{p.category}</span></td>
+                  <td>
+                    {p.status === 'published' ? (
+                      <span class="badge bg-label-success">Published</span>
+                    ) : (
+                      <span class="badge bg-label-warning">Draft</span>
+                    )}
+                  </td>
+                  <td><span class="badge bg-label-primary"><i class="bx bx-show me-1"></i>{p.views || 0}</span></td>
+                  <td><small class="text-muted">{p.created_at ? p.created_at.split(' ')[0] : '-'}</small></td>
+                  <td>
+                    <div class="dropdown">
+                      <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
+                        <i class="bx bx-dots-vertical-rounded"></i>
+                      </button>
+                      <div class="dropdown-menu">
+                        <a
+                          class="dropdown-item edit-btn"
+                          href="javascript:void(0);"
+                          data-id={p.id}
+                          data-title={p.title}
+                          data-slug={p.slug}
+                          data-category={p.category}
+                          data-status={p.status}
+                          data-image={p.image}
+                          data-excerpt={p.excerpt}
+                          data-content={p.content}
+                          data-author={p.author}
+                          data-views={p.views}
+                        >
+                          <i class="bx bx-edit-alt me-1"></i> Edit
+                        </a>
+                        <a class="dropdown-item delete-btn text-danger" href="javascript:void(0);" data-id={p.id}>
+                          <i class="bx bx-trash me-1"></i> Hapus
+                        </a>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {posts.length === 0 && (
+                <tr>
+                  <td colspan="7" class="text-center py-4 text-muted">Belum ada artikel. Klik "Tulis Artikel Baru" untuk mulai.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Post Form -->
+  <div class="modal fade" id="postModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="postModalTitle">Tulis Artikel Baru</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="postForm">
+          <div class="modal-body">
+            <input type="hidden" id="postId" name="id" />
+            <input type="hidden" id="postAction" name="action" value="create" />
+
+            <div class="row">
+              <div class="col-md-8 mb-3">
+                <label for="postTitle" class="form-label">Judul Artikel <span class="text-danger">*</span></label>
+                <input type="text" id="postTitle" name="title" class="form-control" placeholder="Contoh: Optimasi Performa Web Modern" required />
+              </div>
+              <div class="col-md-4 mb-3">
+                <label for="postCategory" class="form-label">Kategori</label>
+                <input type="text" id="postCategory" name="category" class="form-control" placeholder="Teknologi / Tutorial / SaaS" value="Teknologi" />
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="postSlug" class="form-label">Slug URL</label>
+                <input type="text" id="postSlug" name="slug" class="form-control" placeholder="optimasi-performa-web-modern (otomatis jika kosong)" />
+              </div>
+              <div class="col-md-3 mb-3">
+                <label for="postStatus" class="form-label">Status</label>
+                <select id="postStatus" name="status" class="form-select">
+                  <option value="published">Published</option>
+                  <option value="draft">Draft</option>
+                </select>
+              </div>
+              <div class="col-md-3 mb-3">
+                <label for="postViews" class="form-label">Total Views</label>
+                <input type="number" id="postViews" name="views" class="form-control" value="0" />
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-8 mb-3">
+                <label for="postImage" class="form-label">URL Gambar Sampul / Banner</label>
+                <input type="text" id="postImage" name="image" class="form-control" value="/assets/images/t001-nova/t001-nova-project-laptop.webp" />
+              </div>
+              <div class="col-md-4 mb-3">
+                <label for="postAuthor" class="form-label">Penulis</label>
+                <input type="text" id="postAuthor" name="author" class="form-control" value="Finn" />
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="postExcerpt" class="form-label">Ringkasan Singkat (Excerpt)</label>
+              <textarea id="postExcerpt" name="excerpt" rows="2" class="form-control" placeholder="Ringkasan 1-2 kalimat untuk preview di kartu blog..."></textarea>
+            </div>
+
+            <div class="mb-3">
+              <label for="postContent" class="form-label">Konten Lengkap</label>
+              <textarea id="postContent" name="content" rows="6" class="form-control" placeholder="Tuliskan konten artikel lengkap Anda di sini..."></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+            <button type="submit" class="btn btn-primary" id="savePostBtn">Simpan Artikel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script is:inline>
+    document.addEventListener('DOMContentLoaded', () => {
+      const modalEl = document.getElementById('postModal');
+      const bsModal = new bootstrap.Modal(modalEl);
+      const form = document.getElementById('postForm');
+      const addBtn = document.getElementById('addPostBtn');
+      const modalTitle = document.getElementById('postModalTitle');
+
+      addBtn.addEventListener('click', () => {
+        form.reset();
+        document.getElementById('postId').value = '';
+        document.getElementById('postAction').value = 'create';
+        document.getElementById('postStatus').value = 'published';
+        document.getElementById('postImage').value = '/assets/images/t001-nova/t001-nova-project-laptop.webp';
+        document.getElementById('postAuthor').value = 'Finn';
+        document.getElementById('postViews').value = '0';
+        modalTitle.innerText = 'Tulis Artikel Baru';
+      });
+
+      document.querySelectorAll('.edit-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          document.getElementById('postId').value = btn.dataset.id;
+          document.getElementById('postAction').value = 'update';
+          document.getElementById('postTitle').value = btn.dataset.title;
+          document.getElementById('postSlug').value = btn.dataset.slug;
+          document.getElementById('postCategory').value = btn.dataset.category;
+          document.getElementById('postStatus').value = btn.dataset.status;
+          document.getElementById('postImage').value = btn.dataset.image;
+          document.getElementById('postAuthor').value = btn.dataset.author || 'Finn';
+          document.getElementById('postViews').value = btn.dataset.views || 0;
+          document.getElementById('postExcerpt').value = btn.dataset.excerpt || '';
+          document.getElementById('postContent').value = btn.dataset.content || '';
+          modalTitle.innerText = 'Edit Artikel';
+          bsModal.show();
+        });
+      });
+
+      document.querySelectorAll('.delete-btn').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('Yakin ingin menghapus artikel ini?')) return;
+          const id = btn.dataset.id;
+          try {
+            const res = await fetch('/api/admin/posts', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'delete', id }),
+            });
+            if (res.ok) {
+              const row = document.getElementById(`row-${id}`);
+              if (row) row.remove();
+            } else {
+              alert('Gagal menghapus artikel');
+            }
+          } catch (e) {
+            alert('Terjadi kesalahan jaringan');
+          }
+        });
+      });
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(form);
+        const payload = Object.fromEntries(formData.entries());
+        const submitBtn = document.getElementById('savePostBtn');
+        submitBtn.disabled = true;
+        submitBtn.innerText = 'Menyimpan...';
+
+        try {
+          const res = await fetch('/api/admin/posts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          if (res.ok) {
+            bsModal.hide();
+            window.location.reload();
+          } else {
+            const err = await res.json();
+            alert('Error: ' + (err.error || 'Gagal menyimpan'));
+          }
+        } catch (e) {
+          alert('Terjadi kesalahan koneksi');
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.innerText = 'Simpan Artikel';
+        }
+      });
+    });
+  </script>
+</AdminLayout>

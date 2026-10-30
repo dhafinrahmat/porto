@@ -1,0 +1,210 @@
+---
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import db from '@utils/db';
+
+export const prerender = false;
+
+const hero = db.prepare('SELECT * FROM hero WHERE id = 1').get() as any;
+const trustItems = typeof hero?.trustItems === 'string' ? JSON.parse(hero.trustItems) : (hero?.trustItems || []);
+const stats = typeof hero?.stats === 'string' ? JSON.parse(hero.stats) : (hero?.stats || []);
+
+// Ambil juga pengaturan logo & menu dari site_settings
+const rows = db.prepare('SELECT key, value FROM site_settings').all() as { key: string; value: string }[];
+const settings: Record<string, string> = {};
+for (const r of rows) {
+  settings[r.key] = r.value;
+}
+---
+
+<AdminLayout title="Edit Hero Section" activeMenu="hero">
+  <div class="row">
+    <div class="col-xl">
+      <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Edit Hero Section (Halaman Depan Nova)</h5>
+          <small class="text-muted float-end">Tersimpan di SQLite</small>
+        </div>
+        <div class="card-body">
+          <form id="heroForm">
+            <div class="row">
+              <div class="mb-3 col-md-6">
+                <label class="form-label" for="site_logo_text">Teks Logo Header Atas</label>
+                <input type="text" class="form-control" id="site_logo_text" value={settings.site_logo_text || 'NOVA'} />
+                <small class="text-muted">Tulisan brand di kiri atas navigasi</small>
+              </div>
+              <div class="mb-3 col-md-6">
+                <label class="form-label" for="nav_cta_label">Tombol CTA Header Atas</label>
+                <input type="text" class="form-control" id="nav_cta_label" value={settings.nav_cta_label || 'Start a project'} />
+                <small class="text-muted">Tombol hitam di kanan atas header</small>
+              </div>
+            </div>
+
+            <hr class="my-4" />
+            <h6 class="fw-semibold">Konten Hero Section (Banner Atas)</h6>
+
+            <div class="row">
+              <div class="mb-3 col-md-6">
+                <label class="form-label" for="eyebrow">Tagline / Eyebrow Kecil</label>
+                <input type="text" class="form-control" id="eyebrow" name="eyebrow" value={hero?.eyebrow} required />
+                <small class="text-muted">Teks kecil di atas judul utama (kapital)</small>
+              </div>
+
+              <div class="mb-3 col-md-6">
+                <label class="form-label" for="image">URL / Path Foto Hero</label>
+                <input type="text" class="form-control" id="image" name="image" value={hero?.image} required />
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="mb-3 col-md-6">
+                <label class="form-label" for="heading">Heading Utama</label>
+                <input type="text" class="form-control" id="heading" name="heading" value={hero?.heading} required />
+              </div>
+
+              <div class="mb-3 col-md-6">
+                <label class="form-label" for="headingAccent">Heading Accent (Warna Berbeda)</label>
+                <input type="text" class="form-control" id="headingAccent" name="headingAccent" value={hero?.headingAccent} required />
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label" for="description">Deskripsi Ringkas Bio</label>
+              <textarea id="description" name="description" class="form-control" rows="3" required>{hero?.description}</textarea>
+            </div>
+
+            <hr class="my-4" />
+            <h6 class="fw-semibold">Tombol Call-to-Action (CTA)</h6>
+
+            <div class="row">
+              <div class="mb-3 col-md-3">
+                <label class="form-label" for="primaryCTA_label">Label Tombol Utama</label>
+                <input type="text" class="form-control" id="primaryCTA_label" name="primaryCTA_label" value={hero?.primaryCTA_label} required />
+              </div>
+              <div class="mb-3 col-md-3">
+                <label class="form-label" for="primaryCTA_href">Link Tombol Utama</label>
+                <input type="text" class="form-control" id="primaryCTA_href" name="primaryCTA_href" value={hero?.primaryCTA_href} required />
+              </div>
+              <div class="mb-3 col-md-3">
+                <label class="form-label" for="secondaryCTA_label">Label Tombol Kedua</label>
+                <input type="text" class="form-control" id="secondaryCTA_label" name="secondaryCTA_label" value={hero?.secondaryCTA_label} required />
+              </div>
+              <div class="mb-3 col-md-3">
+                <label class="form-label" for="secondaryCTA_href">Link Tombol Kedua</label>
+                <input type="text" class="form-control" id="secondaryCTA_href" name="secondaryCTA_href" value={hero?.secondaryCTA_href} required />
+              </div>
+            </div>
+
+            <hr class="my-4" />
+            <h6 class="fw-semibold">Tech Stack / Trusted By & Counter Stats</h6>
+
+            <div class="row">
+              <div class="mb-3 col-md-6">
+                <label class="form-label" for="trustedBy">Label Tech Stack</label>
+                <input type="text" class="form-control" id="trustedBy" name="trustedBy" value={hero?.trustedBy} />
+              </div>
+              <div class="mb-3 col-md-6">
+                <label class="form-label" for="trustItems">Daftar Stack (Pisahkan dengan koma)</label>
+                <input type="text" class="form-control" id="trustItems" name="trustItems" value={Array.isArray(trustItems) ? trustItems.join(', ') : ''} />
+              </div>
+            </div>
+
+            <!-- Stats (4 items) -->
+            <label class="form-label fw-bold mb-2">Statistik Pencapaian (4 Kotak Angka):</label>
+            <div class="row g-2 mb-4">
+              <div class="col-md-3">
+                <input type="text" class="form-control mb-1" id="stat_v1" placeholder="Nilai (e.g. 15+)" value={stats[0]?.value || ''} />
+                <input type="text" class="form-control" id="stat_l1" placeholder="Label (e.g. Selesai)" value={stats[0]?.label || ''} />
+              </div>
+              <div class="col-md-3">
+                <input type="text" class="form-control mb-1" id="stat_v2" placeholder="Nilai (e.g. 3+)" value={stats[1]?.value || ''} />
+                <input type="text" class="form-control" id="stat_l2" placeholder="Label" value={stats[1]?.label || ''} />
+              </div>
+              <div class="col-md-3">
+                <input type="text" class="form-control mb-1" id="stat_v3" placeholder="Nilai (e.g. 100%)" value={stats[2]?.value || ''} />
+                <input type="text" class="form-control" id="stat_l3" placeholder="Label" value={stats[2]?.label || ''} />
+              </div>
+              <div class="col-md-3">
+                <input type="text" class="form-control mb-1" id="stat_v4" placeholder="Nilai (e.g. 24/7)" value={stats[3]?.value || ''} />
+                <input type="text" class="form-control" id="stat_l4" placeholder="Label" value={stats[3]?.label || ''} />
+              </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+              <button type="submit" class="btn btn-primary" id="saveBtn">
+                <i class="bx bx-save me-1"></i> Simpan Perubahan Hero
+              </button>
+              <a href="/" target="_blank" class="btn btn-outline-secondary">
+                Lihat di Nova Front ↗
+              </a>
+            </div>
+            <div id="alertBox" class="mt-3" style="display:none;"></div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script is:inline>
+    const form = document.getElementById('heroForm');
+    const alertBox = document.getElementById('alertBox');
+    const saveBtn = document.getElementById('saveBtn');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      saveBtn.disabled = true;
+      saveBtn.innerText = 'Menyimpan...';
+
+      const trustItemsRaw = document.getElementById('trustItems').value;
+      const trustItems = trustItemsRaw.split(',').map(s => s.trim()).filter(Boolean);
+
+      const stats = [
+        { value: document.getElementById('stat_v1').value, label: document.getElementById('stat_l1').value },
+        { value: document.getElementById('stat_v2').value, label: document.getElementById('stat_l2').value },
+        { value: document.getElementById('stat_v3').value, label: document.getElementById('stat_l3').value },
+        { value: document.getElementById('stat_v4').value, label: document.getElementById('stat_l4').value },
+      ];
+
+      const payload = {
+        site_logo_text: document.getElementById('site_logo_text').value,
+        nav_cta_label: document.getElementById('nav_cta_label').value,
+        eyebrow: document.getElementById('eyebrow').value,
+        heading: document.getElementById('heading').value,
+        headingAccent: document.getElementById('headingAccent').value,
+        description: document.getElementById('description').value,
+        primaryCTA_label: document.getElementById('primaryCTA_label').value,
+        primaryCTA_href: document.getElementById('primaryCTA_href').value,
+        secondaryCTA_label: document.getElementById('secondaryCTA_label').value,
+        secondaryCTA_href: document.getElementById('secondaryCTA_href').value,
+        trustedBy: document.getElementById('trustedBy').value,
+        trustItems,
+        stats,
+        image: document.getElementById('image').value,
+        imageAlt: 'Hero Image',
+      };
+
+      try {
+        const res = await fetch('/api/admin/hero', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const result = await res.json();
+        alertBox.style.display = 'block';
+        if (res.ok) {
+          alertBox.className = 'alert alert-success';
+          alertBox.innerText = 'Perubahan Hero berhasil disimpan ke database SQLite! Silakan refresh halaman utama.';
+        } else {
+          alertBox.className = 'alert alert-danger';
+          alertBox.innerText = 'Gagal menyimpan: ' + (result.error || 'Unknown error');
+        }
+      } catch (err) {
+        alertBox.style.display = 'block';
+        alertBox.className = 'alert alert-danger';
+        alertBox.innerText = 'Koneksi error: ' + err.message;
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.innerText = 'Simpan Perubahan Hero';
+      }
+    });
+  </script>
+</AdminLayout>

@@ -1,0 +1,212 @@
+---
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import db from '@utils/db';
+
+export const prerender = false;
+
+const services = db.prepare('SELECT * FROM services ORDER BY sort_order ASC, id ASC').all() as any[];
+---
+
+<AdminLayout title="Manage Services" activeMenu="services">
+  <div class="row">
+    <div class="col-12 mb-4">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Daftar Layanan & Penawaran (Services)</h5>
+          <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#serviceModal" id="addServiceBtn">
+            <i class="bx bx-plus me-1"></i> Tambah Layanan Baru
+          </button>
+        </div>
+        <div class="table-responsive text-nowrap">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>No / Index</th>
+                <th>Icon</th>
+                <th>Nama Layanan</th>
+                <th>Deskripsi</th>
+                <th>Urutan</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody class="table-border-bottom-0">
+              {services.map((s) => (
+                <tr id={`row-${s.id}`}>
+                  <td><span class="badge bg-label-primary">{s.number}</span></td>
+                  <td><i class={`bx bx-${s.icon || 'star'} fs-4 text-primary`}></i> <code>{s.icon}</code></td>
+                  <td><strong>{s.title}</strong></td>
+                  <td class="text-truncate" style="max-width: 300px;">{s.description}</td>
+                  <td>#{s.sort_order}</td>
+                  <td>
+                    <div class="dropdown">
+                      <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
+                        <i class="bx bx-dots-vertical-rounded"></i>
+                      </button>
+                      <div class="dropdown-menu">
+                        <a
+                          class="dropdown-item edit-btn"
+                          href="javascript:void(0);"
+                          data-id={s.id}
+                          data-number={s.number}
+                          data-icon={s.icon}
+                          data-title={s.title}
+                          data-description={s.description}
+                          data-order={s.sort_order}
+                        >
+                          <i class="bx bx-edit-alt me-1"></i> Edit
+                        </a>
+                        <a class="dropdown-item text-danger delete-btn" href="javascript:void(0);" data-id={s.id}>
+                          <i class="bx bx-trash me-1"></i> Hapus
+                        </a>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {services.length === 0 && (
+                <tr>
+                  <td colspan="6" class="text-center py-4 text-muted">Belum ada layanan yang ditambahkan.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Service Form -->
+  <div class="modal fade" id="serviceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalTitle">Tambah Layanan Baru</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="serviceForm">
+          <div class="modal-body">
+            <input type="hidden" id="serviceId" />
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label for="number" class="form-label">Nomor / Indeks</label>
+                <input type="text" id="number" class="form-control" placeholder="01." required />
+              </div>
+              <div class="col-md-4 mb-3">
+                <label for="icon" class="form-label">Icon Name</label>
+                <input type="text" id="icon" class="form-control" placeholder="browser, palette, database" required />
+              </div>
+              <div class="col-md-4 mb-3">
+                <label for="sort_order" class="form-label">Urutan Tampil</label>
+                <input type="number" id="sort_order" class="form-control" value="1" required />
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="title" class="form-label">Nama Layanan</label>
+              <input type="text" id="title" class="form-control" placeholder="Contoh: UX/UI Design & Prototyping" required />
+            </div>
+            <div class="mb-3">
+              <label for="description" class="form-label">Deskripsi Layanan</label>
+              <textarea id="description" class="form-control" rows="3" placeholder="Jelaskan value layanan ini..." required></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+            <button type="submit" class="btn btn-primary" id="saveSrvBtn">Simpan Layanan</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script is:inline>
+    let isEditing = false;
+    const modalTitle = document.getElementById('modalTitle');
+    const serviceForm = document.getElementById('serviceForm');
+    const addBtn = document.getElementById('addServiceBtn');
+
+    addBtn.addEventListener('click', () => {
+      isEditing = false;
+      modalTitle.innerText = 'Tambah Layanan Baru';
+      document.getElementById('serviceId').value = '';
+      serviceForm.reset();
+      document.getElementById('number').value = '01.';
+      document.getElementById('icon').value = 'browser';
+      document.getElementById('sort_order').value = '1';
+    });
+
+    document.querySelectorAll('.edit-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        isEditing = true;
+        modalTitle.innerText = 'Edit Layanan';
+        const d = btn.dataset;
+        document.getElementById('serviceId').value = d.id;
+        document.getElementById('number').value = d.number;
+        document.getElementById('icon').value = d.icon;
+        document.getElementById('title').value = d.title;
+        document.getElementById('description').value = d.description;
+        document.getElementById('sort_order').value = d.order;
+        
+        const modal = new bootstrap.Modal(document.getElementById('serviceModal'));
+        modal.show();
+      });
+    });
+
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        if (!confirm('Yakin ingin menghapus layanan ini?')) return;
+
+        try {
+          const res = await fetch('/api/admin/services', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'delete', id }),
+          });
+          if (res.ok) {
+            document.getElementById(`row-${id}`)?.remove();
+          } else {
+            alert('Gagal menghapus');
+          }
+        } catch (err) {
+          alert('Error: ' + err.message);
+        }
+      });
+    });
+
+    serviceForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('serviceId').value;
+      const number = document.getElementById('number').value;
+      const icon = document.getElementById('icon').value;
+      const title = document.getElementById('title').value;
+      const description = document.getElementById('description').value;
+      const sort_order = document.getElementById('sort_order').value;
+
+      const payload = {
+        action: isEditing ? 'update' : 'create',
+        id,
+        number,
+        icon,
+        title,
+        description,
+        sort_order,
+      };
+
+      try {
+        const res = await fetch('/api/admin/services', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (res.ok) {
+          location.reload();
+        } else {
+          const r = await res.json();
+          alert('Error: ' + (r.error || 'Gagal menyimpan'));
+        }
+      } catch (err) {
+        alert('Connection error: ' + err.message);
+      }
+    });
+  </script>
+</AdminLayout>

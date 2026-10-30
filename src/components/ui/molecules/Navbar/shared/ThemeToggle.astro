@@ -1,0 +1,93 @@
+---
+---
+
+<button
+  type="button"
+  class="nova-theme-toggle js-nova-theme-toggle"
+  aria-label="Toggle dark/light mode"
+  title="Ganti Mode Gelap / Terang"
+>
+  <span class="nova-theme-toggle__sun" aria-hidden="true">
+    <i class="ph ph-sun"></i>
+  </span>
+  <span class="nova-theme-toggle__moon" aria-hidden="true">
+    <i class="ph ph-moon"></i>
+  </span>
+</button>
+
+<style>
+  .nova-theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+    border-radius: 9999px;
+    border: 1px solid currentColor;
+    background: transparent;
+    color: inherit;
+    opacity: 0.75;
+    cursor: pointer;
+    transition: opacity 180ms ease, transform 180ms ease, background-color 180ms ease, border-color 180ms ease;
+    padding: 0;
+  }
+
+  .nova-theme-toggle:hover {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+
+  .nova-theme-toggle__sun,
+  .nova-theme-toggle__moon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    line-height: 1;
+    transition: transform 200ms ease;
+  }
+
+  /* When light (default), show moon icon so user can switch to dark */
+  :global(:not(.dark)) .nova-theme-toggle__sun {
+    display: none;
+  }
+  :global(:not(.dark)) .nova-theme-toggle__moon {
+    display: flex;
+  }
+
+  /* When dark, show sun icon so user can switch to light */
+  :global(.dark) .nova-theme-toggle__sun {
+    display: flex;
+  }
+  :global(.dark) .nova-theme-toggle__moon {
+    display: none;
+  }
+</style>
+
+<script is:inline>
+  (function () {
+    function toggleMode() {
+      const isDark = document.documentElement.classList.contains('dark');
+      if (isDark) {
+        document.documentElement.classList.remove('dark');
+        document.documentElement.setAttribute('data-theme', 'light');
+        try { localStorage.setItem('nova-theme', 'light'); } catch (e) {}
+      } else {
+        document.documentElement.classList.add('dark');
+        document.documentElement.setAttribute('data-theme', 'dark');
+        try { localStorage.setItem('nova-theme', 'dark'); } catch (e) {}
+      }
+    }
+
+    // Event delegation on document so every button (static, sticky, mobile drawer) responds
+    document.addEventListener('click', function (e) {
+      const btn = e.target.closest('.js-nova-theme-toggle');
+      if (btn) {
+        e.preventDefault();
+        toggleMode();
+      }
+    });
+  })();
+</script>
